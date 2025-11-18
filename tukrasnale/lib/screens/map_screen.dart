@@ -4,7 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../providers/discovery_provider.dart';
-import '../services/location_service.dart';
+import '../services/location_service.dart' as location_service;
 import '../models/krasnal_models.dart';
 
 class MapScreen extends StatefulWidget {
@@ -49,11 +49,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _centerOnUserLocation() async {
-    final status = await LocationService.instance.checkAndRequestPermissions();
-    
-    if (status == LocationServiceStatus.granted) {
-      final position = await LocationService.instance.getCurrentPosition();
-      if (position != null && mounted) {
+    final status = await location_service.LocationService.instance.checkAndRequestPermissions();
+
+    if (status == location_service.LocationServiceStatus.granted) {
+      final position = await location_service.LocationService.instance.getCurrentPosition();
+      if (mounted) {
         _mapController.move(
           LatLng(position.latitude, position.longitude),
           15.0, // Zoom level
@@ -108,7 +108,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   // OpenStreetMap tiles - optimized
                   TileLayer(
                     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.tukrasnale.app',
+                    userAgentPackageName: 'com.tukrasnal.app',
                     maxNativeZoom: 16,
                     maxZoom: 16,
                   ),
@@ -267,7 +267,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }).toList();
   }
 
-  Marker _buildUserMarker(Position position) {
+  Marker _buildUserMarker(location_service.Position position) {
     return Marker(
       point: LatLng(position.latitude, position.longitude),
       width: 30,

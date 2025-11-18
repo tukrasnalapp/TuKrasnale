@@ -59,7 +59,7 @@ class AppLogo extends StatelessWidget {
         if (showText) ...[
           const SizedBox(width: 8),
           Text(
-            'TuKrasnale',
+            'TuKrasnal',
             style: TextStyle(
               fontSize: (height ?? 40) * 0.6,
               fontWeight: FontWeight.bold,

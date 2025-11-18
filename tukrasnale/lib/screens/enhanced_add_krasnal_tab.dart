@@ -41,7 +41,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: TuKrasnaleColors.background,
+      color: TuKrasnalColors.background,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -97,7 +97,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildBasicInfoCard() {
-    return TuKrasnaleCard(
+    return TuKrasnalCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -138,7 +138,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildLocationCard() {
-    return TuKrasnaleCard(
+    return TuKrasnalCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -246,7 +246,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
           Row(
             children: [
               Expanded(
-                child: TuKrasnaleButton(
+                child: TuKrasnalButton(
                   text: _isGettingLocation ? 'Getting...' : 'Current Location',
                   onPressed: _isGettingLocation ? null : _getCurrentLocation,
                   icon: Icons.my_location,
@@ -255,7 +255,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: TuKrasnaleButton(
+                child: TuKrasnalButton(
                   text: 'Pick from Map',
                   onPressed: _pickFromMap,
                   icon: Icons.map,
@@ -271,23 +271,23 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: TuKrasnaleColors.skyBlue.withOpacity(0.1),
+              color: TuKrasnalColors.skyBlue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: TuKrasnaleColors.skyBlue.withOpacity(0.3)),
+              border: Border.all(color: TuKrasnalColors.skyBlue.withOpacity(0.3)),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: TuKrasnaleColors.skyBlue,
+                  color: TuKrasnalColors.skyBlue,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Latitude: -90 to 90 • Longitude: -180 to 180 • Max 8 decimal places',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: TuKrasnaleColors.skyBlue,
+                      color: TuKrasnalColors.skyBlue,
                     ),
                   ),
                 ),
@@ -300,7 +300,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildGamePropertiesCard() {
-    return TuKrasnaleCard(
+    return TuKrasnalCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -371,7 +371,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildMainImageCard() {
-    return TuKrasnaleCard(
+    return TuKrasnalCard(
       child: ImageUploadWithPreview(
         initialImageUrl: _mainImageUrl,
         uploadType: ImageUploadType.krasnaleMain,
@@ -384,7 +384,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildMedallionImagesCard() {
-    return TuKrasnaleCard(
+    return TuKrasnalCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -428,7 +428,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildGalleryImagesCard() {
-    return TuKrasnaleCard(
+    return TuKrasnalCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -453,7 +453,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                   onPressed: _addGalleryImage,
                   icon: Icon(
                     Icons.add_photo_alternate,
-                    color: TuKrasnaleColors.brickRed,
+                    color: TuKrasnalColors.brickRed,
                   ),
                 ),
             ],
@@ -473,7 +473,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                   height: 80,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: TuKrasnaleColors.outline),
+                    border: Border.all(color: TuKrasnalColors.outline),
                   ),
                   child: Stack(
                     children: [
@@ -494,7 +494,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                           child: Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                              color: TuKrasnaleColors.error,
+                              color: TuKrasnalColors.error,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
@@ -516,7 +516,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: TuKrasnaleColors.outline,
+                  color: TuKrasnalColors.outline,
                   style: BorderStyle.solid,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -527,13 +527,13 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                     Icon(
                       Icons.photo_library_outlined,
                       size: 32,
-                      color: TuKrasnaleColors.textLight,
+                      color: TuKrasnalColors.textLight,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'No gallery images added yet',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: TuKrasnaleColors.textLight,
+                        color: TuKrasnalColors.textLight,
                       ),
                     ),
                   ],
@@ -549,7 +549,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
-      child: TuKrasnaleButton(
+      child: TuKrasnalButton(
         text: _isSubmitting ? 'Creating Krasnal...' : 'Create Krasnal',
         onPressed: (_isSubmitting || _mainImageUrl == null) ? null : _submitForm,
         icon: Icons.add_location_alt,
@@ -560,9 +560,9 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   Color _getRarityColor(KrasnalRarity rarity) {
     switch (rarity) {
       case KrasnalRarity.common:
-        return TuKrasnaleColors.textLight;
+        return TuKrasnalColors.textLight;
       case KrasnalRarity.rare:
-        return TuKrasnaleColors.skyBlue;
+        return TuKrasnalColors.skyBlue;
       case KrasnalRarity.epic:
         return Colors.purple;
       case KrasnalRarity.legendary:
@@ -578,10 +578,10 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
     try {
       final locationResult = await LocationService().getCurrentLocation();
       
-      if (locationResult.success && mounted) {
+      if (locationResult != null && locationResult.success && mounted) {
         setState(() {
-          _latitudeController.text = LocationService.formatCoordinate(locationResult.latitude!);
-          _longitudeController.text = LocationService.formatCoordinate(locationResult.longitude!);
+          _latitudeController.text = LocationService.formatCoordinate(locationResult.latitude);
+          _longitudeController.text = LocationService.formatCoordinate(locationResult.longitude);
         });
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -594,7 +594,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(locationResult.error!),
+            content: Text(locationResult?.error ?? 'Unknown location error'),
             backgroundColor: Colors.red,
             action: SnackBarAction(
               label: 'Settings',

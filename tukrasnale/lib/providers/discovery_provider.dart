@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/krasnal_models.dart';
-import '../services/location_service.dart';
+import '../services/location_service.dart' as location_service;
 import '../services/supabase_service.dart';
 
 class DiscoveryProvider extends ChangeNotifier {
@@ -9,7 +9,7 @@ class DiscoveryProvider extends ChangeNotifier {
   List<KrasnalModel> _nearbyKrasnale = [];
   List<KrasnalModel> _discoverableKrasnale = [];
   List<UserDiscovery> _userDiscoveries = [];
-  Position? _userPosition;
+  location_service.Position? _userPosition;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -18,11 +18,11 @@ class DiscoveryProvider extends ChangeNotifier {
   List<KrasnalModel> get nearbyKrasnale => _nearbyKrasnale;
   List<KrasnalModel> get discoverableKrasnale => _discoverableKrasnale;
   List<UserDiscovery> get userDiscoveries => _userDiscoveries;
-  Position? get userPosition => _userPosition;
+  location_service.Position? get userPosition => _userPosition;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   
-  bool get hasLocationPermission => LocationService.instance.hasLocationAccess;
+  bool get hasLocationPermission => location_service.LocationService.instance.hasLocationAccess;
 
   // Load all krasnale data
   Future<void> loadAllKrasnale() async {
@@ -45,7 +45,7 @@ class DiscoveryProvider extends ChangeNotifier {
   // Update user position and refresh nearby krasnale
   Future<void> updateUserPosition() async {
     try {
-      final position = await LocationService.instance.getCurrentPosition();
+      final position = await location_service.LocationService.instance.getCurrentPosition();
       if (position != null) {
         _userPosition = position;
         await _updateNearbyKrasnale();
@@ -113,7 +113,7 @@ class DiscoveryProvider extends ChangeNotifier {
     }
 
     // Calculate distance to krasnal
-    double distance = LocationService.instance.calculateDistance(
+    double distance = location_service.LocationService.instance.calculateDistance(
       _userPosition!.latitude,
       _userPosition!.longitude,
       krasnal.latitude,

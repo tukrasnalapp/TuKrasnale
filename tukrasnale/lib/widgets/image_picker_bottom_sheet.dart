@@ -27,7 +27,7 @@ class ImagePickerBottomSheet {
             const SizedBox(height: 20),
             
             ListTile(
-              leading: Icon(Icons.camera_alt, color: TuKrasnaleColors.brickRed),
+              leading: Icon(Icons.camera_alt, color: TuKrasnalColors.brickRed),
               title: const Text('Camera'),
               subtitle: const Text('Take a new photo'),
               onTap: () async {
@@ -40,7 +40,7 @@ class ImagePickerBottomSheet {
             ),
             
             ListTile(
-              leading: Icon(Icons.photo_library, color: TuKrasnaleColors.forestGreen),
+              leading: Icon(Icons.photo_library, color: TuKrasnalColors.forestGreen),
               title: Text(allowMultiple ? 'Gallery (Multiple)' : 'Gallery'),
               subtitle: Text(allowMultiple 
                   ? 'Select multiple images' 
@@ -69,7 +69,7 @@ class ImagePickerBottomSheet {
             const Divider(),
             
             ListTile(
-              leading: Icon(Icons.cancel, color: TuKrasnaleColors.textLight),
+              leading: Icon(Icons.cancel, color: TuKrasnalColors.textLight),
               title: const Text('Cancel'),
               onTap: () => Navigator.pop(context),
             ),

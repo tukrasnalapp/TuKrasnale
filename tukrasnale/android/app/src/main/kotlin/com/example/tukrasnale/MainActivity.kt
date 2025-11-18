@@ -1,4 +1,4 @@
-package com.example.tukrasnale
+package com.example.tukrasnal
 
 import io.flutter.embedding.android.FlutterActivity
 

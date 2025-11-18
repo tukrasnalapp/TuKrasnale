@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/app_logo.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -38,6 +40,29 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                const SizedBox(height: 40),
+                
+                // App Logo
+                const Center(
+                  child: AppLogo(
+                    width: 100,
+                    height: 100,
+                    showText: true,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                
+                // Welcome text
+                const Text(
+                  'Welcome Back',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4A2E1F),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 30),
                   const Icon(
                     Icons.account_circle,
                     size: 80,

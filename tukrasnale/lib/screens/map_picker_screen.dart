@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import '../widgets/app_logo.dart';
+import 'package:flutter/services.dart';
 import '../services/location_service.dart';
 
 class MapPickerScreen extends StatefulWidget {
@@ -8,216 +7,165 @@ class MapPickerScreen extends StatefulWidget {
   final double? initialLongitude;
 
   const MapPickerScreen({
-    super.key,
+    Key? key,
     this.initialLatitude,
     this.initialLongitude,
-  });
+  }) : super(key: key);
 
   @override
   State<MapPickerScreen> createState() => _MapPickerScreenState();
 }
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
-  double? _selectedLatitude;
-  double? _selectedLongitude;
   final _latController = TextEditingController();
   final _lngController = TextEditingController();
-
+  
   @override
   void initState() {
     super.initState();
-    _selectedLatitude = widget.initialLatitude ?? 51.1079; // Default to Wrocław
-    _selectedLongitude = widget.initialLongitude ?? 17.0385;
-    _updateControllers();
+    if (widget.initialLatitude != null) {
+      _latController.text = widget.initialLatitude!.toStringAsFixed(8);
+    }
+    if (widget.initialLongitude != null) {
+      _lngController.text = widget.initialLongitude!.toStringAsFixed(8);
+    }
   }
 
-  void _updateControllers() {
-    if (_selectedLatitude != null) {
-      _latController.text = LocationService.formatCoordinate(_selectedLatitude!);
-    }
-    if (_selectedLongitude != null) {
-      _lngController.text = LocationService.formatCoordinate(_selectedLongitude!);
+  @override
+  void dispose() {
+    _latController.dispose();
+    _lngController.dispose();
+    super.dispose();
+  }
+
+  void _selectLocation() {
+    final lat = double.tryParse(_latController.text);
+    final lng = double.tryParse(_lngController.text);
+    
+    if (lat != null && lng != null && 
+        lat >= -90 && lat <= 90 && 
+        lng >= -180 && lng <= 180) {
+      Navigator.of(context).pop({'latitude': lat, 'longitude': lng});
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter valid coordinates'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: ThemedAppBar(
-        title: 'Pick Location',
-        showLogo: true,
+      appBar: AppBar(
+        title: const Text('Pick Location'),
         actions: [
           TextButton(
-            onPressed: _selectedLatitude != null && _selectedLongitude != null
-                ? () => Navigator.pop(context, {
-                    'latitude': _selectedLatitude,
-                    'longitude': _selectedLongitude,
-                  })
-                : null,
+            onPressed: _selectLocation,
             child: const Text(
-              'Done',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              'DONE',
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
       ),
-      body: Container(
-        color: TuKrasnaleColors.background,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Map placeholder (will be replaced with actual map)
-            Expanded(
-              flex: 3,
-              child: Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: TuKrasnaleColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: TuKrasnaleColors.outline),
+            const Text(
+              'Enter coordinates manually or use GPS:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _latController,
+              decoration: const InputDecoration(
+                labelText: 'Latitude',
+                hintText: 'e.g., 50.0647',
+                border: OutlineInputBorder(),
+                suffixText: '°N/S',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d{0,8}$')),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _lngController,
+              decoration: const InputDecoration(
+                labelText: 'Longitude',
+                hintText: 'e.g., 19.9450',
+                border: OutlineInputBorder(),
+                suffixText: '°E/W',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d{0,8}$')),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _getCurrentLocation,
+                    icon: const Icon(Icons.my_location),
+                    label: const Text('Use Current Location'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
                 ),
-                child: Stack(
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Map placeholder
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.map_outlined,
-                            size: 64,
-                            color: TuKrasnaleColors.textLight,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Interactive Map',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: TuKrasnaleColors.textLight,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Tap on the map to select location',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: TuKrasnaleColors.textLight,
-                            ),
-                          ),
-                          if (_selectedLatitude != null && _selectedLongitude != null) ...[
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: TuKrasnaleColors.brickRed.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: TuKrasnaleColors.brickRed),
-                              ),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    color: TuKrasnaleColors.brickRed,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Selected Location',
-                                    style: TextStyle(
-                                      color: TuKrasnaleColors.brickRed,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${LocationService.formatCoordinate(_selectedLatitude!)}, ${LocationService.formatCoordinate(_selectedLongitude!)}',
-                                    style: TextStyle(
-                                      color: TuKrasnaleColors.brickRed,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                    const Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue),
+                        SizedBox(width: 8),
+                        Text('Coordinate Guidelines:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ],
                     ),
-                    
-                    // Current location button
-                    Positioned(
-                      top: 16,
-                      right: 16,
-                      child: FloatingActionButton.small(
-                        onPressed: _getCurrentLocation,
-                        backgroundColor: TuKrasnaleColors.skyBlue,
-                        child: const Icon(Icons.my_location),
-                      ),
-                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Latitude: -90.0 to 90.0 degrees'),
+                    const Text('• Longitude: -180.0 to 180.0 degrees'),
+                    const Text('• Maximum 8 decimal places'),
+                    const SizedBox(height: 16),
+                    const Text('Examples:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('• Krakow: 50.0647, 19.9450'),
+                    const Text('• Warsaw: 52.2297, 21.0122'),
                   ],
                 ),
               ),
             ),
-            
-            // Manual coordinate input
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: TuKrasnaleCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Manual Coordinate Input',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _latController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(
-                              labelText: 'Latitude',
-                              hintText: '51.1079',
-                              suffixText: '°',
-                            ),
-                            onChanged: _onLatitudeChanged,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            controller: _lngController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(
-                              labelText: 'Longitude',
-                              hintText: '17.0385',
-                              suffixText: '°',
-                            ),
-                            onChanged: _onLongitudeChanged,
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: TuKrasnaleColors.textLight,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Latitude: -90 to 90, Longitude: -180 to 180 (max 8 decimal places)',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: TuKrasnaleColors.textLight,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectLocation,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.green,
+                ),
+                child: const Text(
+                  'Select This Location',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ),
@@ -227,70 +175,35 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     );
   }
 
-  void _onLatitudeChanged(String value) {
-    final parsed = LocationService.parseCoordinate(value, true);
-    setState(() {
-      _selectedLatitude = parsed;
-    });
-  }
-
-  void _onLongitudeChanged(String value) {
-    final parsed = LocationService.parseCoordinate(value, false);
-    setState(() {
-      _selectedLongitude = parsed;
-    });
-  }
-
   Future<void> _getCurrentLocation() async {
-    // Show loading
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Getting current location...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-
-    final locationResult = await LocationService().getCurrentLocation();
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      
-      if (locationResult.success) {
-        setState(() {
-          _selectedLatitude = locationResult.latitude;
-          _selectedLongitude = locationResult.longitude;
-        });
-        _updateControllers();
+    try {
+      // Use the LocationService to get current location
+      final location = await LocationService().getCurrentLocation();
+      if (location != null) {
+        _latController.text = location.latitude.toStringAsFixed(8);
+        _lngController.text = location.longitude.toStringAsFixed(8);
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Location updated!'),
+            content: Text('Current location loaded!'),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(locationResult.error!),
+          const SnackBar(
+            content: Text('Unable to get current location'),
             backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Settings',
-              textColor: Colors.white,
-              onPressed: () => LocationService().openLocationSettings(),
-            ),
           ),
         );
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error getting location: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-  }
-
-  @override
-  void dispose() {
-    _latController.dispose();
-    _lngController.dispose();
-    super.dispose();
   }
 }

@@ -54,7 +54,7 @@ class _ImageUploadWithPreviewState extends State<ImageUploadWithPreview> {
               Text(
                 '*',
                 style: TextStyle(
-                  color: TuKrasnaleColors.error,
+                  color: TuKrasnalColors.error,
                   fontSize: 16,
                 ),
               ),
@@ -70,12 +70,12 @@ class _ImageUploadWithPreviewState extends State<ImageUploadWithPreview> {
           decoration: BoxDecoration(
             border: Border.all(
               color: _imageUrl != null 
-                  ? TuKrasnaleColors.forestGreen
-                  : TuKrasnaleColors.outline,
+                  ? TuKrasnalColors.forestGreen
+                  : TuKrasnalColors.outline,
               width: 2,
             ),
             borderRadius: BorderRadius.circular(12),
-            color: TuKrasnaleColors.surface,
+            color: TuKrasnalColors.surface,
           ),
           child: Stack(
             children: [
@@ -104,13 +104,13 @@ class _ImageUploadWithPreviewState extends State<ImageUploadWithPreview> {
               Icon(
                 Icons.check_circle,
                 size: 16,
-                color: TuKrasnaleColors.forestGreen,
+                color: TuKrasnalColors.forestGreen,
               ),
               const SizedBox(width: 4),
               Text(
                 'Image uploaded successfully',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: TuKrasnaleColors.forestGreen,
+                  color: TuKrasnalColors.forestGreen,
                 ),
               ),
             ],
@@ -137,7 +137,7 @@ class _ImageUploadWithPreviewState extends State<ImageUploadWithPreview> {
                     ? loadingProgress.cumulativeBytesLoaded / 
                       loadingProgress.expectedTotalBytes!
                     : null,
-                color: TuKrasnaleColors.brickRed,
+                color: TuKrasnalColors.brickRed,
               ),
             );
           },
@@ -151,12 +151,12 @@ class _ImageUploadWithPreviewState extends State<ImageUploadWithPreview> {
                     Icon(
                       Icons.error_outline,
                       size: 48,
-                      color: TuKrasnaleColors.error,
+                      color: TuKrasnalColors.error,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Failed to load image',
-                      style: TextStyle(color: TuKrasnaleColors.error),
+                      style: TextStyle(color: TuKrasnalColors.error),
                     ),
                   ],
                 ),
@@ -181,20 +181,20 @@ class _ImageUploadWithPreviewState extends State<ImageUploadWithPreview> {
             Icon(
               Icons.add_photo_alternate_outlined,
               size: 48,
-              color: TuKrasnaleColors.textLight,
+              color: TuKrasnalColors.textLight,
             ),
             const SizedBox(height: 8),
             Text(
               'Tap to add image',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: TuKrasnaleColors.textLight,
+                color: TuKrasnalColors.textLight,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'Camera or Gallery',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: TuKrasnaleColors.textLight,
+                color: TuKrasnalColors.textLight,
               ),
             ),
           ],
@@ -214,7 +214,7 @@ class _ImageUploadWithPreviewState extends State<ImageUploadWithPreview> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
-              color: TuKrasnaleColors.brickRed,
+              color: TuKrasnalColors.brickRed,
             ),
             const SizedBox(height: 12),
             const Text(
@@ -241,7 +241,7 @@ class _ImageUploadWithPreviewState extends State<ImageUploadWithPreview> {
             // Remove button
             Container(
               decoration: BoxDecoration(
-                color: TuKrasnaleColors.error.withOpacity(0.9),
+                color: TuKrasnalColors.error.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: IconButton(
@@ -264,7 +264,7 @@ class _ImageUploadWithPreviewState extends State<ImageUploadWithPreview> {
           // Upload/Change button
           Container(
             decoration: BoxDecoration(
-              color: TuKrasnaleColors.brickRed.withOpacity(0.9),
+              color: TuKrasnalColors.brickRed.withOpacity(0.9),
               borderRadius: BorderRadius.circular(6),
             ),
             child: IconButton(

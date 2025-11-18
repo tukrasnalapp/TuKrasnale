@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class TuKrasnaleColors {
+class TuKrasnalColors {
   // Primary Color Palette
   static const Color background = Color(0xFFF5E6D3);      // Soft Beige
   static const Color darkBrown = Color(0xFF4A2E1F);       // Logo & Header
@@ -31,50 +31,50 @@ class TuKrasnaleColors {
   static const Color outline = Color(0xFFD7CCC8);
 }
 
-class TuKrasnaleTheme {
+class TuKrasnalTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       
       // Color Scheme
       colorScheme: ColorScheme.fromSeed(
-        seedColor: TuKrasnaleColors.darkBrown,
-        primary: TuKrasnaleColors.darkBrown,
-        secondary: TuKrasnaleColors.brickRed,
-        tertiary: TuKrasnaleColors.skyBlue,
-        surface: TuKrasnaleColors.surface,
-        background: TuKrasnaleColors.background,
-        error: TuKrasnaleColors.error,
-        onPrimary: TuKrasnaleColors.textOnDark,
-        onSecondary: TuKrasnaleColors.textOnDark,
-        onSurface: TuKrasnaleColors.textPrimary,
-        onBackground: TuKrasnaleColors.textPrimary,
+        seedColor: TuKrasnalColors.darkBrown,
+        primary: TuKrasnalColors.darkBrown,
+        secondary: TuKrasnalColors.brickRed,
+        tertiary: TuKrasnalColors.skyBlue,
+        surface: TuKrasnalColors.surface,
+        background: TuKrasnalColors.background,
+        error: TuKrasnalColors.error,
+        onPrimary: TuKrasnalColors.textOnDark,
+        onSecondary: TuKrasnalColors.textOnDark,
+        onSurface: TuKrasnalColors.textPrimary,
+        onBackground: TuKrasnalColors.textPrimary,
       ),
       
       // Scaffold
-      scaffoldBackgroundColor: TuKrasnaleColors.background,
+      scaffoldBackgroundColor: TuKrasnalColors.background,
       
       // App Bar Theme
       appBarTheme: const AppBarTheme(
-        backgroundColor: TuKrasnaleColors.darkBrown,
-        foregroundColor: TuKrasnaleColors.textOnDark,
+        backgroundColor: TuKrasnalColors.darkBrown,
+        foregroundColor: TuKrasnalColors.textOnDark,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          color: TuKrasnaleColors.textOnDark,
+          color: TuKrasnalColors.textOnDark,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
         iconTheme: IconThemeData(
-          color: TuKrasnaleColors.textOnDark,
+          color: TuKrasnalColors.textOnDark,
         ),
       ),
       
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: TuKrasnaleColors.surface,
-        selectedItemColor: TuKrasnaleColors.brickRed,
-        unselectedItemColor: TuKrasnaleColors.textLight,
+        backgroundColor: TuKrasnalColors.surface,
+        selectedItemColor: TuKrasnalColors.brickRed,
+        unselectedItemColor: TuKrasnalColors.textLight,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
         selectedLabelStyle: const TextStyle(
@@ -90,10 +90,10 @@ class TuKrasnaleTheme {
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: TuKrasnaleColors.brickRed,
-          foregroundColor: TuKrasnaleColors.textOnDark,
+          backgroundColor: TuKrasnalColors.brickRed,
+          foregroundColor: TuKrasnalColors.textOnDark,
           elevation: 2,
-          shadowColor: TuKrasnaleColors.darkBrown.withOpacity(0.3),
+          shadowColor: TuKrasnalColors.darkBrown.withOpacity(0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -108,10 +108,10 @@ class TuKrasnaleTheme {
       // Outlined Button Theme (Secondary Button)
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          backgroundColor: TuKrasnaleColors.beige,
-          foregroundColor: TuKrasnaleColors.darkBrown,
+          backgroundColor: TuKrasnalColors.beige,
+          foregroundColor: TuKrasnalColors.darkBrown,
           side: const BorderSide(
-            color: TuKrasnaleColors.darkBrown,
+            color: TuKrasnalColors.darkBrown,
             width: 2,
           ),
           shape: RoundedRectangleBorder(
@@ -128,7 +128,7 @@ class TuKrasnaleTheme {
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: TuKrasnaleColors.brickRed,
+          foregroundColor: TuKrasnalColors.brickRed,
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -138,9 +138,9 @@ class TuKrasnaleTheme {
       
       // Card Theme
       cardTheme: CardThemeData(
-        color: TuKrasnaleColors.surface,
+        color: TuKrasnalColors.surface,
         elevation: 2,
-        shadowColor: TuKrasnaleColors.darkBrown.withOpacity(0.1),
+        shadowColor: TuKrasnalColors.darkBrown.withOpacity(0.1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -150,60 +150,60 @@ class TuKrasnaleTheme {
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: TuKrasnaleColors.surface,
+        fillColor: TuKrasnalColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: TuKrasnaleColors.outline),
+          borderSide: const BorderSide(color: TuKrasnalColors.outline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: TuKrasnaleColors.outline),
+          borderSide: const BorderSide(color: TuKrasnalColors.outline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: TuKrasnaleColors.brickRed, width: 2),
+          borderSide: const BorderSide(color: TuKrasnalColors.brickRed, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: TuKrasnaleColors.error, width: 2),
+          borderSide: const BorderSide(color: TuKrasnalColors.error, width: 2),
         ),
-        labelStyle: const TextStyle(color: TuKrasnaleColors.textSecondary),
-        hintStyle: const TextStyle(color: TuKrasnaleColors.textLight),
+        labelStyle: const TextStyle(color: TuKrasnalColors.textSecondary),
+        hintStyle: const TextStyle(color: TuKrasnalColors.textLight),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       
       // Floating Action Button Theme
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: TuKrasnaleColors.brickRed,
-        foregroundColor: TuKrasnaleColors.textOnDark,
+        backgroundColor: TuKrasnalColors.brickRed,
+        foregroundColor: TuKrasnalColors.textOnDark,
         elevation: 6,
       ),
       
       // Dialog Theme
       dialogTheme: DialogThemeData(
-        backgroundColor: TuKrasnaleColors.surface,
+        backgroundColor: TuKrasnalColors.surface,
         elevation: 8,
-        shadowColor: TuKrasnaleColors.darkBrown.withOpacity(0.2),
+        shadowColor: TuKrasnalColors.darkBrown.withOpacity(0.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         titleTextStyle: const TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
         contentTextStyle: const TextStyle(
-          color: TuKrasnaleColors.textSecondary,
+          color: TuKrasnalColors.textSecondary,
           fontSize: 16,
         ),
       ),
       
       // Chip Theme
       chipTheme: ChipThemeData(
-        backgroundColor: TuKrasnaleColors.lightBeige,
-        selectedColor: TuKrasnaleColors.skyBlue,
-        labelStyle: const TextStyle(color: TuKrasnaleColors.textPrimary),
-        side: const BorderSide(color: TuKrasnaleColors.outline),
+        backgroundColor: TuKrasnalColors.lightBeige,
+        selectedColor: TuKrasnalColors.skyBlue,
+        labelStyle: const TextStyle(color: TuKrasnalColors.textPrimary),
+        side: const BorderSide(color: TuKrasnalColors.outline),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -211,85 +211,85 @@ class TuKrasnaleTheme {
       
       // Progress Indicator Theme
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: TuKrasnaleColors.brickRed,
-        linearTrackColor: TuKrasnaleColors.lightBeige,
-        circularTrackColor: TuKrasnaleColors.lightBeige,
+        color: TuKrasnalColors.brickRed,
+        linearTrackColor: TuKrasnalColors.lightBeige,
+        circularTrackColor: TuKrasnalColors.lightBeige,
       ),
       
       // Text Theme
       textTheme: const TextTheme(
         displayLarge: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 57,
           fontWeight: FontWeight.w400,
         ),
         displayMedium: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 45,
           fontWeight: FontWeight.w400,
         ),
         displaySmall: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 36,
           fontWeight: FontWeight.w400,
         ),
         headlineLarge: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 32,
           fontWeight: FontWeight.w600,
         ),
         headlineMedium: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 28,
           fontWeight: FontWeight.w600,
         ),
         headlineSmall: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 24,
           fontWeight: FontWeight.w600,
         ),
         titleLarge: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 22,
           fontWeight: FontWeight.w500,
         ),
         titleMedium: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
         titleSmall: TextStyle(
-          color: TuKrasnaleColors.textSecondary,
+          color: TuKrasnalColors.textSecondary,
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
         bodyLarge: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 16,
           fontWeight: FontWeight.w400,
         ),
         bodyMedium: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 14,
           fontWeight: FontWeight.w400,
         ),
         bodySmall: TextStyle(
-          color: TuKrasnaleColors.textSecondary,
+          color: TuKrasnalColors.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.w400,
         ),
         labelLarge: TextStyle(
-          color: TuKrasnaleColors.textPrimary,
+          color: TuKrasnalColors.textPrimary,
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
         labelMedium: TextStyle(
-          color: TuKrasnaleColors.textSecondary,
+          color: TuKrasnalColors.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
         labelSmall: TextStyle(
-          color: TuKrasnaleColors.textLight,
+          color: TuKrasnalColors.textLight,
           fontSize: 11,
           fontWeight: FontWeight.w500,
         ),
@@ -299,14 +299,14 @@ class TuKrasnaleTheme {
 }
 
 // Custom Widgets with Theme
-class TuKrasnaleButton extends StatelessWidget {
+class TuKrasnalButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
   final ButtonStyle? style;
   final bool isSecondary;
   final IconData? icon;
 
-  const TuKrasnaleButton({
+  const TuKrasnalButton({
     super.key,
     required this.text,
     this.onPressed,
@@ -347,12 +347,12 @@ class TuKrasnaleButton extends StatelessWidget {
   }
 }
 
-class TuKrasnaleCard extends StatelessWidget {
+class TuKrasnalCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
 
-  const TuKrasnaleCard({
+  const TuKrasnalCard({
     super.key,
     required this.child,
     this.padding,

@@ -7,32 +7,6 @@ enum LocationServiceStatus {
   disabled,
 }
 
-class Position {
-  final double latitude;
-  final double longitude;
-  final DateTime timestamp;
-  final double accuracy;
-  final double altitude;
-  final double heading;
-  final double speed;
-  final double speedAccuracy;
-  final double altitudeAccuracy;
-  final double headingAccuracy;
-
-  Position({
-    required this.latitude,
-    required this.longitude,
-    required this.timestamp,
-    required this.accuracy,
-    required this.altitude,
-    required this.heading,
-    required this.speed,
-    required this.speedAccuracy,
-    required this.altitudeAccuracy,
-    required this.headingAccuracy,
-  });
-}
-
 class LocationData {
   final double latitude;
   final double longitude;
@@ -70,24 +44,13 @@ class LocationService {
     return LocationServiceStatus.granted;
   }
 
-  Future<Position> getCurrentPosition() async {
+  Future<LocationData> getCurrentPosition() async {
     try {
       // Mock implementation - return Krakow city center
       await Future.delayed(const Duration(seconds: 1));
-      return Position(
-        latitude: 50.0647,
-        longitude: 19.9450,
-        timestamp: DateTime.now(),
-        accuracy: 10.0,
-        altitude: 0.0,
-        heading: 0.0,
-        speed: 0.0,
-        speedAccuracy: 0.0,
-        altitudeAccuracy: 0.0,
-        headingAccuracy: 0.0,
-      );
+      return LocationData(latitude: 50.0647, longitude: 19.9450);
     } catch (e) {
-      throw Exception('Failed to get current location: $e');
+      return LocationData.error('Failed to get current location: $e');
     }
   }
 

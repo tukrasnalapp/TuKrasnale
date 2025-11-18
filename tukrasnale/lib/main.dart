@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'TuKrasnal',
-        theme: TuKrasnaleTheme.lightTheme,
+        theme: TuKrasnalTheme.lightTheme,
         home: const AuthWrapper(),
         routes: {
           '/login': (context) => const LoginScreen(),
