@@ -26,8 +26,8 @@ class AppLogo extends StatelessWidget {
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return SizedBox(
-              width: width ?? 40,
-              height: height ?? 40,
+              width: width ?? 80,
+              height: height ?? 80,
               child: const Center(
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
@@ -36,8 +36,8 @@ class AppLogo extends StatelessWidget {
           errorBuilder: (context, error, stackTrace) {
             // Fallback to text logo if image fails to load
             return Container(
-              width: width ?? 40,
-              height: height ?? 40,
+              width: width ?? 80,
+              height: height ?? 80,
               decoration: const BoxDecoration(
                 color: Color(0xFF4A2E1F), // Dark brown
                 shape: BoxShape.circle,
@@ -56,17 +56,17 @@ class AppLogo extends StatelessWidget {
           },
         ),
         
-        if (showText) ...[
-          const SizedBox(width: 8),
-          Text(
-            'TuKrasnal',
-            style: TextStyle(
-              fontSize: (height ?? 40) * 0.6,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).appBarTheme.foregroundColor,
-            ),
-          ),
-        ],
+        // if (showText) ...[
+        //   const SizedBox(width: 8),
+        //   Text(
+        //     'TuKrasnal',
+        //     style: TextStyle(
+        //       fontSize: (height ?? 40) * 0.6,
+        //       fontWeight: FontWeight.bold,
+        //       color: Theme.of(context).appBarTheme.foregroundColor,
+        //     ),
+        //   ),
+        // ],
       ],
     );
   }
@@ -94,7 +94,7 @@ class ThemedAppBar extends StatelessWidget implements PreferredSizeWidget {
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const AppLogo(width: 32, height: 32),
+                const AppLogo(width: 64, height: 64),
                 const SizedBox(width: 12),
                 Text(title),
               ],
