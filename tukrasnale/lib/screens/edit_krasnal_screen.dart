@@ -1187,7 +1187,7 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
       print('📝 AdminService operation returned: $krasnalId');
 
       // Check if we got a krasnal ID back (string)
-      if (krasnalId is String && krasnalId.isNotEmpty) {
+      if (krasnalId.isNotEmpty) {
         print('✅ SUCCESS: Krasnal updated with ID: $krasnalId');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
