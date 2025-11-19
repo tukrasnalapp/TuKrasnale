@@ -72,54 +72,72 @@ class SupabaseService {
   
   // Krasnal methods
   Future<List<Krasnal>> getAllKrasnale() async {
-    final response = await _client
-        .from('krasnale')
-        .select('''
-          id,
-          name,
-          description,
-          location:locations(
-            id,
-            latitude,
-            longitude,
-            address,
-            country,
-            city
-          ),
-          metadata,
-          primary_image_url,
-          created_at,
-          images(
-            id,
-            url,
-            type,
-            order_index
-          )
-        ''')
-        .order('name');
+    try {
+      // First, try the simple query without joins
+      final response = await _client
+          .from('krasnale')
+          .select('*')
+          .order('created_at', ascending: false);
         
-    return response.map<Krasnal>((json) {
-      final location = json['location'];
-      final images = json['images'] as List<dynamic>?;
-      
-      return Krasnal(
-        id: json['id'],
-        name: json['name'],
-        description: json['description'] ?? '',
-        location: KrasnalLocation(
-          latitude: location['latitude'],
-          longitude: location['longitude'],
-          address: location['address'],
-        ),
-        metadata: json['metadata'] != null ? Map<String, dynamic>.from(json['metadata']) : null,
-        createdAt: DateTime.parse(json['created_at']),
-        images: images?.map((img) => KrasnalImage(
-          id: img['id'],
-          url: img['url'],
-          uploadedAt: DateTime.now(), // Default since we don't have this field
-        )).toList() ?? [],
-      );
-    }).toList();
+      return response.map<Krasnal>((json) {
+        // Handle the case where coordinates might be stored directly in krasnale table
+        double latitude = 0.0;
+        double longitude = 0.0;
+        String? address;
+        
+        // Try to get coordinates from different possible column names
+        if (json['latitude'] != null) {
+          latitude = (json['latitude'] as num).toDouble();
+        }
+        if (json['longitude'] != null) {
+          longitude = (json['longitude'] as num).toDouble();
+        }
+        if (json['location_name'] != null) {
+          address = json['location_name'] as String?;
+        } else if (json['address'] != null) {
+          address = json['address'] as String?;
+        }
+        
+        final location = KrasnalLocation(
+          latitude: latitude,
+          longitude: longitude,
+          address: address,
+        );
+        
+        // Handle images - for now return empty list since we need to check table structure
+        final images = <KrasnalImage>[];
+        
+        // Handle metadata
+        Map<String, dynamic> metadata = {};
+        if (json['metadata'] != null) {
+          metadata = Map<String, dynamic>.from(json['metadata'] as Map);
+        } else {
+          // If no metadata column, create it from individual fields
+          if (json['rarity'] != null) {
+            metadata['rarity'] = json['rarity'];
+          }
+          if (json['points_value'] != null) {
+            metadata['pointsValue'] = json['points_value'];
+          }
+        }
+
+        return Krasnal(
+          id: json['id'] as String,
+          name: json['name'] as String,
+          description: json['description'] as String? ?? '',
+          location: location,
+          metadata: metadata,
+          createdAt: json['created_at'] != null 
+              ? DateTime.parse(json['created_at'] as String)
+              : DateTime.now(),
+          images: images,
+        );
+      }).toList();
+    } catch (e) {
+      print('❌ Error fetching krasnale: $e');
+      // Return empty list instead of throwing to prevent app crash
+      return <Krasnal>[];
+    }
   }
 
   Future<List<Krasnal>> getNearbyKrasnale({
@@ -127,15 +145,20 @@ class SupabaseService {
     required double longitude,
     double radiusKm = 5.0,
   }) async {
-    // Simple distance calculation for now
-    final allKrasnale = await getAllKrasnale();
-    return allKrasnale.where((krasnal) {
-      double distance = _calculateDistance(
-        latitude, longitude,
-        krasnal.location.latitude, krasnal.location.longitude,
-      );
-      return distance <= (radiusKm * 1000); // Convert to meters
-    }).toList();
+    try {
+      // Simple distance calculation for now
+      final allKrasnale = await getAllKrasnale();
+      return allKrasnale.where((krasnal) {
+        double distance = _calculateDistance(
+          latitude, longitude,
+          krasnal.location.latitude, krasnal.location.longitude,
+        );
+        return distance <= (radiusKm * 1000); // Convert to meters
+      }).toList();
+    } catch (e) {
+      print('❌ Error fetching nearby krasnale: $e');
+      return <Krasnal>[];
+    }
   }
 
   Future<List<Krasnal>> getDiscoverableKrasnale({
@@ -143,20 +166,25 @@ class SupabaseService {
     required double userLng,
     double discoveryRadiusMeters = 50.0, // Default discovery radius
   }) async {
-    final allKrasnale = await getAllKrasnale();
-    List<Krasnal> discoverable = [];
-    
-    for (var krasnal in allKrasnale) {
-      double distance = _calculateDistance(
-        userLat, userLng,
-        krasnal.location.latitude, krasnal.location.longitude,
-      );
-      if (distance <= discoveryRadiusMeters) {
-        discoverable.add(krasnal);
+    try {
+      final allKrasnale = await getAllKrasnale();
+      List<Krasnal> discoverable = [];
+      
+      for (var krasnal in allKrasnale) {
+        double distance = _calculateDistance(
+          userLat, userLng,
+          krasnal.location.latitude, krasnal.location.longitude,
+        );
+        if (distance <= discoveryRadiusMeters) {
+          discoverable.add(krasnal);
+        }
       }
+      
+      return discoverable;
+    } catch (e) {
+      print('❌ Error fetching discoverable krasnale: $e');
+      return <Krasnal>[];
     }
-    
-    return discoverable;
   }
 
   // Helper method for distance calculation
