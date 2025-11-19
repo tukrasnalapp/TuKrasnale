@@ -8,7 +8,7 @@ import '../theme/app_theme.dart';
 import '../models/krasnal_models.dart';
 import '../services/location_service.dart';
 import '../services/admin_service.dart';
-import '../services/admin_service_extensions.dart';
+
 import '../services/supabase_image_service.dart';
 import '../screens/map_picker_screen.dart';
 

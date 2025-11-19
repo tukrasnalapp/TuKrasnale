@@ -73,30 +73,17 @@ class SupabaseService {
   // Krasnal methods
   Future<List<Krasnal>> getAllKrasnale() async {
     try {
-      // First, try the simple query without joins
       final response = await _client
           .from('krasnale')
           .select('*')
+          .eq('is_active', true) // Only get active krasnale
           .order('created_at', ascending: false);
         
       return response.map<Krasnal>((json) {
-        // Handle the case where coordinates might be stored directly in krasnale table
-        double latitude = 0.0;
-        double longitude = 0.0;
-        String? address;
-        
-        // Try to get coordinates from different possible column names
-        if (json['latitude'] != null) {
-          latitude = (json['latitude'] as num).toDouble();
-        }
-        if (json['longitude'] != null) {
-          longitude = (json['longitude'] as num).toDouble();
-        }
-        if (json['location_name'] != null) {
-          address = json['location_name'] as String?;
-        } else if (json['address'] != null) {
-          address = json['address'] as String?;
-        }
+        // Handle coordinates (they're stored directly in krasnale table)
+        double latitude = (json['latitude'] as num?)?.toDouble() ?? 0.0;
+        double longitude = (json['longitude'] as num?)?.toDouble() ?? 0.0;
+        String? address = json['location_name'] as String?;
         
         final location = KrasnalLocation(
           latitude: latitude,
@@ -104,21 +91,42 @@ class SupabaseService {
           address: address,
         );
         
-        // Handle images - for now return empty list since we need to check table structure
-        final images = <KrasnalImage>[];
+        // Handle gallery images array
+        List<KrasnalImage> images = [];
+        if (json['gallery_images'] != null) {
+          final galleryUrls = List<String>.from(json['gallery_images'] as List);
+          images = galleryUrls.asMap().entries.map((entry) {
+            return KrasnalImage(
+              id: '${json['id']}_gallery_${entry.key}',
+              url: entry.value,
+              uploadedAt: json['created_at'] != null 
+                  ? DateTime.parse(json['created_at'] as String)
+                  : DateTime.now(),
+            );
+          }).toList();
+        }
+        
+        // Add primary image if it exists
+        if (json['image_url'] != null && (json['image_url'] as String).isNotEmpty) {
+          images.insert(0, KrasnalImage(
+            id: '${json['id']}_primary',
+            url: json['image_url'] as String,
+            uploadedAt: json['created_at'] != null 
+                ? DateTime.parse(json['created_at'] as String)
+                : DateTime.now(),
+          ));
+        }
         
         // Handle metadata
         Map<String, dynamic> metadata = {};
-        if (json['metadata'] != null) {
-          metadata = Map<String, dynamic>.from(json['metadata'] as Map);
-        } else {
-          // If no metadata column, create it from individual fields
-          if (json['rarity'] != null) {
-            metadata['rarity'] = json['rarity'];
-          }
-          if (json['points_value'] != null) {
-            metadata['pointsValue'] = json['points_value'];
-          }
+        if (json['rarity'] != null) {
+          metadata['rarity'] = json['rarity'];
+        }
+        if (json['points_value'] != null) {
+          metadata['pointsValue'] = json['points_value'];
+        }
+        if (json['discovery_radius'] != null) {
+          metadata['discoveryRadius'] = json['discovery_radius'];
         }
 
         return Krasnal(

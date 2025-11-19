@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/krasnal_models.dart';
+import 'supabase_service.dart';
 import '../models/report_models.dart';
 
 class AdminService {
@@ -36,45 +37,44 @@ class AdminService {
     String? primaryImageUrl,
     List<Map<String, dynamic>> additionalImages = const [],
   }) async {
-    // First create the location
-    final locationResponse = await _supabase.from('locations').insert({
-      'latitude': latitude,
-      'longitude': longitude,
-      'address': locationAddress,
-    }).select().single();
-
-    final locationId = locationResponse['id'];
-
-    // Prepare metadata
-    final metadata = {
-      'rarity': rarity.name,
-      'pointsValue': pointsValue,
-    };
-
-    // Create the krasnal
-    final krasnalResponse = await _supabase.from('krasnale').insert({
-      'name': name,
-      'description': description ?? '',
-      'location_id': locationId,
-      'metadata': metadata,
-      'primary_image_url': primaryImageUrl,
-    }).select().single();
-
-    final krasnalId = krasnalResponse['id'];
-
-    // Insert additional images if provided
+    print('🔧 AdminService.createKrasnal called with updated version');
+    print('📊 Parameters: name=$name, lat=$latitude, lng=$longitude');
+    
+    // Prepare gallery images array from additional images
+    List<String> galleryImageUrls = [];
     if (additionalImages.isNotEmpty) {
-      final imageInserts = additionalImages.map((image) => {
-        'krasnal_id': krasnalId,
-        'url': image['url'],
-        'type': image['type'] ?? 'gallery',
-        'order_index': image['orderIndex'] ?? 0,
-      }).toList();
-
-      await _supabase.from('images').insert(imageInserts);
+      galleryImageUrls = additionalImages
+          .map((image) => image['url'] as String)
+          .where((url) => url.isNotEmpty)
+          .toList();
     }
 
-    return krasnalId;
+    print('🖼️ Gallery images to store: ${galleryImageUrls.length}');
+
+    try {
+      // Create the krasnal with coordinates directly in the table
+      print('💾 Inserting into krasnale table directly...');
+      final krasnalResponse = await _supabase.from('krasnale').insert({
+        'name': name,
+        'description': description ?? '',
+        'latitude': latitude,
+        'longitude': longitude,
+        'location_name': locationAddress,
+        'rarity': rarity.name,
+        'points_value': pointsValue,
+        'image_url': primaryImageUrl,
+        'gallery_images': galleryImageUrls.isEmpty ? null : galleryImageUrls,
+        'discovery_radius': 50, // Default discovery radius in meters
+        'is_active': true,
+      }).select().single();
+
+      final krasnalId = krasnalResponse['id'];
+      print('✅ Krasnal created successfully with ID: $krasnalId');
+      return krasnalId;
+    } catch (e) {
+      print('❌ Error in createKrasnal: $e');
+      rethrow;
+    }
   }
 
   // Update existing Krasnal
@@ -88,62 +88,99 @@ class AdminService {
         .eq('id', id);
   }
 
-  // Delete Krasnal
+  // Delete Krasnal (basic method - kept for compatibility)
   Future<void> deleteKrasnal(String id) async {
     await _supabase.from('krasnale').delete().eq('id', id);
   }
 
+  // Enhanced delete method that also removes associated images from storage
+  Future<bool> deleteKrasnalWithImages(String krasnalId) async {
+    try {
+      print('🔄 Deleting krasnal with images: $krasnalId');
+      
+      // First, get the krasnal to find its image URLs
+      final krasnale = await getAllKrasnale();
+      final krasnal = krasnale.where((k) => k.id == krasnalId).firstOrNull;
+      
+      if (krasnal == null) {
+        print('❌ Krasnal not found: $krasnalId');
+        return false;
+      }
+      
+      // Collect all image URLs that need to be deleted from storage
+      final imageUrls = <String>[];
+      
+      // Add primary image if exists
+      if (krasnal.primaryImageUrl != null && krasnal.primaryImageUrl!.isNotEmpty) {
+        imageUrls.add(krasnal.primaryImageUrl!);
+      }
+      
+      // Add all images from the images array
+      for (final image in krasnal.images) {
+        if (image.url.isNotEmpty && image.url.startsWith('http')) {
+          imageUrls.add(image.url);
+        }
+      }
+      
+      print('📸 Found ${imageUrls.length} images to delete');
+      
+      // Delete each image from Supabase Storage
+      for (final imageUrl in imageUrls) {
+        try {
+          await deleteImage(imageUrl);
+          print('✅ Deleted image: $imageUrl');
+        } catch (e) {
+          print('⚠️ Failed to delete image $imageUrl: $e');
+          // Continue with other images even if one fails
+        }
+      }
+      
+      // Now delete the krasnal record
+      await deleteKrasnal(krasnalId);
+      print('✅ Krasnal and images deleted successfully');
+      return true;
+      
+    } catch (e) {
+      print('❌ Error in deleteKrasnalWithImages: $e');
+      return false;
+    }
+  }
+
   // Get all Krasnale for admin management
   Future<List<Krasnal>> getAllKrasnale() async {
-    final response = await _supabase
-        .from('krasnale')
-        .select('''
-          id,
-          name,
-          description,
-          location:locations(
-            id,
-            latitude,
-            longitude,
-            address,
-            country,
-            city
-          ),
-          metadata,
-          primary_image_url,
-          created_at,
-          images(
-            id,
-            url,
-            type,
-            order_index
-          )
-        ''')
-        .order('created_at', ascending: false);
-
-    return response.map<Krasnal>((json) {
-      final location = json['location'];
-      final images = json['images'] as List<dynamic>?;
-      
-      return Krasnal(
-        id: json['id'],
-        name: json['name'],
-        description: json['description'] ?? '',
-        location: KrasnalLocation(
-          latitude: location['latitude'],
-          longitude: location['longitude'],
-          address: location['address'],
-        ),
-        metadata: json['metadata'] != null ? Map<String, dynamic>.from(json['metadata']) : null,
-        createdAt: DateTime.parse(json['created_at']),
-        images: images?.map((img) => KrasnalImage(
-          id: img['id'],
-          url: img['url'],
-          uploadedAt: DateTime.now(), // Default since we don't have this field
-        )).toList() ?? [],
-      );
-    }).toList();
+    // Use the working SupabaseService instead of complex joins
+    final supabaseService = SupabaseService.instance;
+    return await supabaseService.getAllKrasnale();
   }
+
+  // Check if name is unique (excluding current krasnal if editing)
+  Future<bool> checkNameExists(String name, {String? excludeId}) async {
+    final query = _supabase.from('krasnale').select('id').eq('name', name);
+    
+    if (excludeId != null) {
+      query.neq('id', excludeId);
+    }
+    
+    final response = await query;
+    return response.isNotEmpty;
+  }
+
+  // Check if coordinates exist (excluding current krasnal if editing)
+  Future<bool> checkCoordinatesExist(double latitude, double longitude, {String? excludeId}) async {
+    final query = _supabase
+        .from('krasnale')
+        .select('id')
+        .eq('latitude', latitude)
+        .eq('longitude', longitude);
+    
+    if (excludeId != null) {
+      query.neq('id', excludeId);
+    }
+    
+    final response = await query;
+    return response.isNotEmpty;
+  }
+
 
   // Get all reports for admin review
   Future<List<KrasnaleReport>> getAllReports() async {

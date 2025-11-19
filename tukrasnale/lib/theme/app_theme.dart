@@ -1,3 +1,14 @@
+// 🎨 TU KRASNALE APP THEME
+// 
+// This file contains the complete Material 3 theme for the Tu Krasnale app.
+// Color palette inspired by traditional Polish dwarf statues and Kraków's aesthetic.
+//
+// Usage:
+// - Apply theme in main.dart: theme: TuKrasnalTheme.lightTheme
+// - Use colors: TuKrasnalColors.brickRed, TuKrasnalColors.darkBrown, etc.
+// - Use custom widgets: TuKrasnalButton, TuKrasnalCard
+// - Use AppBar factory: TuKrasnalAppBar.create() (import app_bar_theme.dart)
+
 import 'package:flutter/material.dart';
 
 class TuKrasnalColors {

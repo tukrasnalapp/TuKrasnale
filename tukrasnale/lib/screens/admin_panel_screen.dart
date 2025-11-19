@@ -32,10 +32,24 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Panel'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text(
+          'Tu Krasnale - Admin Panel',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.red[700], // Same as edit krasnal screen
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 4,
+        shadowColor: Colors.black.withOpacity(0.3),
+        centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
           tabs: const [
             Tab(icon: Icon(Icons.add_location), text: 'Add Krasnal'),
             Tab(icon: Icon(Icons.list), text: 'Manage Krasnale'),

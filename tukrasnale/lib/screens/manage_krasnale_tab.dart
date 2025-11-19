@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/krasnal_models.dart';
 import '../services/admin_service.dart';
+import '../models/krasnal_models.dart';
+
 import 'krasnal_detail_screen.dart';
 import 'edit_krasnal_screen.dart';
 
@@ -101,17 +102,24 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
     if (confirmed == true) {
       print('🔄 Deleting krasnal: ${krasnal.name}');
       try {
-        // Use image-aware deletion to remove both record and images
-        await _adminService.deleteKrasnal(krasnal.id);
-        if (mounted) {
+        // Use enhanced deletion that removes both record and images
+        final success = await _adminService.deleteKrasnalWithImages(krasnal.id);
+        if (mounted && success) {
           print('✅ Krasnal deleted successfully');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Krasnal deleted successfully'),
+              content: Text('Krasnal and images deleted successfully'),
               backgroundColor: Colors.green,
             ),
           );
           await _loadKrasnale(); // Refresh the list
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to delete krasnal'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       } catch (e) {
         print('❌ Error deleting krasnal: $e');
