@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import '../theme/app_theme.dart';
 import '../models/krasnal_models.dart';
 import '../services/admin_service.dart';
 import 'krasnal_detail_screen.dart';
@@ -15,7 +13,7 @@ class ManageKrasnaleTab extends StatefulWidget {
 
 class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
   final AdminService _adminService = AdminService();
-  List<KrasnalModel> _krasnale = [];
+  List<Krasnal> _krasnale = [];
   bool _isLoading = true;
   String _searchQuery = '';
   KrasnalRarity? _selectedRarity;
@@ -36,7 +34,7 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
       final krasnale = await _adminService.getAllKrasnale();
       if (mounted) {
         setState(() {
-          _krasnale = krasnale ?? [];
+          _krasnale = krasnale;
           _isLoading = false;
         });
         print('✅ Loaded ${_krasnale.length} krasnale');
@@ -57,20 +55,30 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
     }
   }
 
-  List<KrasnalModel> get _filteredKrasnale {
+  List<Krasnal> get _filteredKrasnale {
     return _krasnale.where((krasnal) {
       final matchesSearch = _searchQuery.isEmpty ||
           krasnal.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (krasnal.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-          (krasnal.locationName?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+          krasnal.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (krasnal.location.address?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
 
-      final matchesRarity = _selectedRarity == null || krasnal.rarity == _selectedRarity;
+      // Get rarity from metadata
+      KrasnalRarity krasnalRarity = KrasnalRarity.common;
+      if (krasnal.metadata != null && krasnal.metadata!['rarity'] != null) {
+        final rarityString = krasnal.metadata!['rarity'] as String;
+        krasnalRarity = KrasnalRarity.values.firstWhere(
+          (r) => r.name == rarityString,
+          orElse: () => KrasnalRarity.common,
+        );
+      }
+      
+      final matchesRarity = _selectedRarity == null || krasnalRarity == _selectedRarity;
 
       return matchesSearch && matchesRarity;
     }).toList();
   }
 
-  Future<void> _deleteKrasnal(KrasnalModel krasnal) async {
+  Future<void> _deleteKrasnal(Krasnal krasnal) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -93,6 +101,7 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
     if (confirmed == true) {
       print('🔄 Deleting krasnal: ${krasnal.name}');
       try {
+        // Use image-aware deletion to remove both record and images
         await _adminService.deleteKrasnal(krasnal.id);
         if (mounted) {
           print('✅ Krasnal deleted successfully');
@@ -118,7 +127,7 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
     }
   }
 
-  Future<void> _viewKrasnal(KrasnalModel krasnal) async {
+  Future<void> _viewKrasnal(Krasnal krasnal) async {
     print('👀 Viewing krasnal: ${krasnal.name}');
     final result = await Navigator.push(
       context,
@@ -133,7 +142,7 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
     }
   }
 
-  Future<void> _editKrasnal(KrasnalModel krasnal) async {
+  Future<void> _editKrasnal(Krasnal krasnal) async {
     print('✏️ Editing krasnal: ${krasnal.name}');
     final result = await Navigator.push(
       context,
@@ -151,9 +160,9 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
   Color _getRarityColor(KrasnalRarity rarity) {
     switch (rarity) {
       case KrasnalRarity.common:
-        return TuKrasnalColors.textLight;
+        return Colors.grey;
       case KrasnalRarity.rare:
-        return TuKrasnalColors.skyBlue;
+        return Colors.blue;
       case KrasnalRarity.epic:
         return Colors.purple;
       case KrasnalRarity.legendary:
@@ -164,7 +173,7 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: TuKrasnalColors.background,
+      color: Colors.grey[100],
       child: Column(
         children: [
           // Header with search and filters
@@ -184,13 +193,13 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: TuKrasnalColors.brickRed.withOpacity(0.1),
+                          color: Colors.red[700]!.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
                           '${_filteredKrasnale.length} krasnale',
                           style: TextStyle(
-                            color: TuKrasnalColors.brickRed,
+                            color: Colors.red[700],
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -257,11 +266,10 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    TuKrasnalButton(
-                      text: 'Refresh',
-                      icon: Icons.refresh,
-                      isSecondary: true,
+                    ElevatedButton.icon(
                       onPressed: _loadKrasnale,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Refresh'),
                     ),
                   ],
                 ),
@@ -281,7 +289,7 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
                             Icon(
                               Icons.search_off,
                               size: 64,
-                              color: TuKrasnalColors.textLight,
+                              color: Colors.grey[600],
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -289,7 +297,7 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
                                   ? 'No krasnale match your search criteria'
                                   : 'No krasnale found',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: TuKrasnalColors.textLight,
+                                color: Colors.grey[600],
                               ),
                             ),
                           ],
@@ -309,7 +317,23 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
     );
   }
 
-  Widget _buildKrasnalCard(KrasnalModel krasnal) {
+  Widget _buildKrasnalCard(Krasnal krasnal) {
+    // Get rarity from metadata
+    KrasnalRarity krasnalRarity = KrasnalRarity.common;
+    if (krasnal.metadata != null && krasnal.metadata!['rarity'] != null) {
+      final rarityString = krasnal.metadata!['rarity'] as String;
+      krasnalRarity = KrasnalRarity.values.firstWhere(
+        (r) => r.name == rarityString,
+        orElse: () => KrasnalRarity.common,
+      );
+    }
+
+    // Get points value from metadata
+    int pointsValue = 10;
+    if (krasnal.metadata != null && krasnal.metadata!['pointsValue'] != null) {
+      pointsValue = krasnal.metadata!['pointsValue'] as int;
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -322,33 +346,11 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
               height: 80,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: TuKrasnalColors.outline),
+                border: Border.all(color: Colors.grey[300]!),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(7),
-                child: krasnal.imageUrl != null && krasnal.imageUrl!.isNotEmpty
-                    ? krasnal.imageUrl!.startsWith('http')
-                        ? Image.network(
-                            krasnal.imageUrl!,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(child: CircularProgressIndicator());
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildImagePlaceholder();
-                            },
-                          )
-                        : !kIsWeb
-                            ? Image.network(
-                                krasnal.imageUrl!, // Fallback to network for non-http URLs
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return _buildImagePlaceholder();
-                                },
-                              )
-                            : _buildImagePlaceholder()
-                    : _buildImagePlaceholder(),
+                child: _buildKrasnalThumbnail(krasnal),
               ),
             ),
             const SizedBox(width: 12),
@@ -374,14 +376,14 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _getRarityColor(krasnal.rarity).withOpacity(0.1),
+                          color: _getRarityColor(krasnalRarity).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _getRarityColor(krasnal.rarity)),
+                          border: Border.all(color: _getRarityColor(krasnalRarity)),
                         ),
                         child: Text(
-                          krasnal.rarity.name.toUpperCase(),
+                          krasnalRarity.name.toUpperCase(),
                           style: TextStyle(
-                            color: _getRarityColor(krasnal.rarity),
+                            color: _getRarityColor(krasnalRarity),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -392,9 +394,9 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
                   const SizedBox(height: 4),
                   
                   // Description
-                  if (krasnal.description != null && krasnal.description!.isNotEmpty)
+                  if (krasnal.description.isNotEmpty)
                     Text(
-                      krasnal.description!,
+                      krasnal.description,
                       style: Theme.of(context).textTheme.bodySmall,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -404,13 +406,13 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
                   // Location and points
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 12, color: TuKrasnalColors.textLight),
+                      Icon(Icons.location_on, size: 12, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          krasnal.locationName ?? '${krasnal.latitude}, ${krasnal.longitude}',
+                          krasnal.location.address ?? '${krasnal.latitude}, ${krasnal.longitude}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: TuKrasnalColors.textLight,
+                            color: Colors.grey[600],
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -420,13 +422,13 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: TuKrasnalColors.skyBlue.withOpacity(0.1),
+                          color: Colors.blue.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '${krasnal.pointsValue} pts',
+                          '$pointsValue pts',
                           style: TextStyle(
-                            color: TuKrasnalColors.skyBlue,
+                            color: Colors.blue,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -447,8 +449,8 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
                   icon: const Icon(Icons.visibility),
                   tooltip: 'View Details',
                   style: IconButton.styleFrom(
-                    backgroundColor: TuKrasnalColors.skyBlue.withOpacity(0.1),
-                    foregroundColor: TuKrasnalColors.skyBlue,
+                    backgroundColor: Colors.blue.withOpacity(0.1),
+                    foregroundColor: Colors.blue,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -488,5 +490,43 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
         color: Colors.grey[400],
       ),
     );
+  }
+
+  Widget _buildKrasnalThumbnail(Krasnal krasnal) {
+    // Check if we have a valid image URL
+    if (krasnal.primaryImageUrl == null || krasnal.primaryImageUrl!.isEmpty) {
+      return _buildImagePlaceholder();
+    }
+
+    final imageUrl = krasnal.primaryImageUrl!;
+    
+    // For Supabase URLs (should start with http)
+    if (imageUrl.startsWith('http')) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.red[700],
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ Failed to load thumbnail: $imageUrl');
+          return _buildImagePlaceholder();
+        },
+      );
+    } else {
+      // Log warning for non-HTTP URLs
+      print('⚠️ Non-HTTP image URL detected: $imageUrl');
+      return _buildImagePlaceholder();
+    }
   }
 }

@@ -1,4 +1,5 @@
 import '../services/admin_service.dart';
+import '../models/krasnal_models.dart';
 
 // Extension methods for AdminService to support uniqueness validation
 extension AdminServiceUniqueness on AdminService {
@@ -8,8 +9,9 @@ extension AdminServiceUniqueness on AdminService {
       
       // Get all krasnale and check names
       final krasnale = await getAllKrasnale();
+      final validKrasnale = krasnale.whereType<Krasnal>().toList();
       
-      return krasnale.any((krasnal) => 
+      return validKrasnale.any((krasnal) => 
         krasnal.name.toLowerCase() == name.toLowerCase() && 
         (excludeId == null || krasnal.id != excludeId)
       );
@@ -25,12 +27,13 @@ extension AdminServiceUniqueness on AdminService {
       
       // Get all krasnale and check coordinates (with small tolerance for floating point comparison)
       final krasnale = await getAllKrasnale();
+      final validKrasnale = krasnale.whereType<Krasnal>().toList();
       
       const tolerance = 0.000001; // About 10cm tolerance
       
-      return krasnale.any((krasnal) => 
-        (krasnal.latitude - latitude).abs() < tolerance &&
-        (krasnal.longitude - longitude).abs() < tolerance &&
+      return validKrasnale.any((krasnal) => 
+        (krasnal.location.latitude - latitude).abs() < tolerance &&
+        (krasnal.location.longitude - longitude).abs() < tolerance &&
         (excludeId == null || krasnal.id != excludeId)
       );
     } catch (e) {

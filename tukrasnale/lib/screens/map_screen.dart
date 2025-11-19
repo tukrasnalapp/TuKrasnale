@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
-import '../providers/discovery_provider.dart';
+import '../providers/discovery_provider.dart' as discovery;
 import '../services/location_service.dart' as location_service;
 import '../models/krasnal_models.dart';
 
@@ -39,7 +38,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _initializeMap() async {
-    final discoveryProvider = context.read<DiscoveryProvider>();
+    final discoveryProvider = context.read<discovery.DiscoveryProvider>();
     
     // Load all krasnale
     await discoveryProvider.loadAllKrasnale();
@@ -60,7 +59,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         );
         
         // Update discovery provider with position
-        final discoveryProvider = context.read<DiscoveryProvider>();
+        final discoveryProvider = context.read<discovery.DiscoveryProvider>();
         await discoveryProvider.updateUserPosition();
       }
     }
@@ -85,7 +84,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
         ],
       ),
-      body: Consumer<DiscoveryProvider>(
+      body: Consumer<discovery.DiscoveryProvider>(
         builder: (context, discoveryProvider, child) {
           if (discoveryProvider.isLoading) {
             return const Center(
@@ -228,14 +227,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  List<Marker> _buildKrasnalMarkers(DiscoveryProvider discoveryProvider) {
+  List<Marker> _buildKrasnalMarkers(discovery.DiscoveryProvider discoveryProvider) {
     return discoveryProvider.allKrasnale.map((krasnal) {
       bool isDiscovered = discoveryProvider.isDiscovered(krasnal.id);
       bool isNearby = discoveryProvider.discoverableKrasnale
           .any((nearby) => nearby.id == krasnal.id);
 
       return Marker(
-        point: LatLng(krasnal.latitude, krasnal.longitude),
+        point: LatLng(krasnal.location.latitude, krasnal.location.longitude),
         width: 30,
         height: 30,
         child: GestureDetector(
@@ -287,13 +286,23 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  Color _getKrasnalMarkerColor(KrasnalModel krasnal, bool isDiscovered, bool isNearby) {
+  Color _getKrasnalMarkerColor(Krasnal krasnal, bool isDiscovered, bool isNearby) {
     if (isDiscovered) {
       return Colors.green;
     } else if (isNearby) {
       return Colors.orange;
     } else {
-      switch (krasnal.rarity) {
+      // Get rarity from metadata
+      KrasnalRarity rarity = KrasnalRarity.common;
+      if (krasnal.metadata != null && krasnal.metadata!['rarity'] != null) {
+        final rarityString = krasnal.metadata!['rarity'] as String;
+        rarity = KrasnalRarity.values.firstWhere(
+          (r) => r.name == rarityString,
+          orElse: () => KrasnalRarity.common,
+        );
+      }
+      
+      switch (rarity) {
         case KrasnalRarity.common:
           return Colors.grey;
         case KrasnalRarity.rare:
@@ -314,7 +323,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     _scanAnimationController.repeat();
 
     try {
-      final discoveryProvider = context.read<DiscoveryProvider>();
+      final discoveryProvider = context.read<discovery.DiscoveryProvider>();
       final discoverableKrasnale = await discoveryProvider.scanForDiscoverableKrasnale();
       
       await Future.delayed(const Duration(seconds: 2)); // For dramatic effect
@@ -336,7 +345,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _showDiscoverableKrasnaleDialog(List<KrasnalModel> krasnale) {
+  void _showDiscoverableKrasnaleDialog(List<Krasnal> krasnale) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -354,19 +363,27 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             children: [
               Text('Found ${krasnale.length} krasnale you can discover:'),
               const SizedBox(height: 16),
-              ...krasnale.map((krasnal) => ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: _getKrasnalMarkerColor(krasnal, false, true),
-                  child: const Icon(Icons.star, color: Colors.white),
-                ),
-                title: Text(krasnal.name),
-                subtitle: Text(krasnal.locationName ?? ''),
-                trailing: Text('${krasnal.pointsValue} pts'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showKrasnalDetails(krasnal, false);
-                },
-              )),
+              ...krasnale.map((krasnal) {
+                // Get points value from metadata
+                int pointsValue = 10;
+                if (krasnal.metadata != null && krasnal.metadata!['pointsValue'] != null) {
+                  pointsValue = krasnal.metadata!['pointsValue'] as int;
+                }
+                
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: _getKrasnalMarkerColor(krasnal, false, true),
+                    child: const Icon(Icons.star, color: Colors.white),
+                  ),
+                  title: Text(krasnal.name),
+                  subtitle: Text(krasnal.location.address ?? ''),
+                  trailing: Text('$pointsValue pts'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showKrasnalDetails(krasnal, false);
+                  },
+                );
+              }),
             ],
           ),
         ),
@@ -405,7 +422,24 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _showKrasnalDetails(KrasnalModel krasnal, bool isDiscovered) {
+  void _showKrasnalDetails(Krasnal krasnal, bool isDiscovered) {
+    // Get rarity and points from metadata
+    KrasnalRarity rarity = KrasnalRarity.common;
+    int pointsValue = 10;
+    
+    if (krasnal.metadata != null) {
+      if (krasnal.metadata!['rarity'] != null) {
+        final rarityString = krasnal.metadata!['rarity'] as String;
+        rarity = KrasnalRarity.values.firstWhere(
+          (r) => r.name == rarityString,
+          orElse: () => KrasnalRarity.common,
+        );
+      }
+      if (krasnal.metadata!['pointsValue'] != null) {
+        pointsValue = krasnal.metadata!['pointsValue'] as int;
+      }
+    }
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -414,13 +448,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (krasnal.description != null) ...[
-              Text(krasnal.description!),
+            if (krasnal.description.isNotEmpty) ...[
+              Text(krasnal.description),
               const SizedBox(height: 12),
             ],
-            Text('Location: ${krasnal.locationName ?? "Unknown"}'),
-            Text('Rarity: ${krasnal.rarity.name.toUpperCase()}'),
-            Text('Points: ${krasnal.pointsValue}'),
+            Text('Location: ${krasnal.location.address ?? "Unknown"}'),
+            Text('Rarity: ${rarity.name.toUpperCase()}'),
+            Text('Points: $pointsValue'),
             if (!isDiscovered) ...[
               const SizedBox(height: 12),
               const Text('Status: Not discovered'),
@@ -451,10 +485,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> _attemptDiscovery(KrasnalModel krasnal) async {
+  Future<void> _attemptDiscovery(Krasnal krasnal) async {
     Navigator.pop(context); // Close details dialog
     
-    final discoveryProvider = context.read<DiscoveryProvider>();
+    final discoveryProvider = context.read<discovery.DiscoveryProvider>();
     final result = await discoveryProvider.attemptDiscovery(krasnal);
     
     if (result.canDiscover) {
@@ -469,7 +503,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _showSuccessDialog(KrasnalModel krasnal) {
+  void _showSuccessDialog(Krasnal krasnal) {
+    // Get points value from metadata
+    int pointsValue = 10;
+    if (krasnal.metadata != null && krasnal.metadata!['pointsValue'] != null) {
+      pointsValue = krasnal.metadata!['pointsValue'] as int;
+    }
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -485,7 +525,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           children: [
             Text('Congratulations! You discovered ${krasnal.name}!'),
             const SizedBox(height: 16),
-            Text('You earned ${krasnal.pointsValue} points!'),
+            Text('You earned $pointsValue points!'),
           ],
         ),
         actions: [
@@ -498,7 +538,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _showDiscoveryFailedDialog(DiscoveryResult result) {
+  void _showDiscoveryFailedDialog(discovery.DiscoveryResult result) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

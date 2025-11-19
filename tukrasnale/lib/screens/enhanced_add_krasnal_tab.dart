@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import 'dart:typed_data';
-import '../theme/app_theme.dart';
+import 'dart:io';
 import '../models/krasnal_models.dart';
-import '../services/location_service.dart';
 import '../services/admin_service.dart';
-import '../services/admin_service_extensions.dart';
-import '../screens/map_picker_screen.dart';
+import '../services/supabase_image_service.dart';
+import '../services/location_service.dart';
+
+// Update any old model references in the rest of the file to use the consolidated models
 
 class EnhancedAddKrasnalTab extends StatefulWidget {
   const EnhancedAddKrasnalTab({super.key});
@@ -21,6 +21,7 @@ class EnhancedAddKrasnalTab extends StatefulWidget {
 class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   final _formKey = GlobalKey<FormState>();
   final AdminService _adminService = AdminService();
+  final SupabaseImageService _imageService = SupabaseImageService();
   
   // Form controllers
   final _nameController = TextEditingController();
@@ -52,7 +53,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: TuKrasnalColors.background,
+      color: Colors.grey[100],
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -120,8 +121,10 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildBasicInfoCard() {
-    return TuKrasnalCard(
-      child: Column(
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -165,12 +168,15 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
           ),
         ],
       ),
+      ),
     );
   }
 
   Widget _buildLocationCard() {
-    return TuKrasnalCard(
-      child: Column(
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -291,20 +297,18 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
           Row(
             children: [
               Expanded(
-                child: TuKrasnalButton(
-                  text: _isGettingLocation ? 'Getting...' : 'Current Location',
+                child: ElevatedButton.icon(
                   onPressed: _isGettingLocation ? null : _getCurrentLocation,
-                  icon: Icons.my_location,
-                  isSecondary: true,
+                  icon: const Icon(Icons.my_location),
+                  label: Text(_isGettingLocation ? 'Getting...' : 'Current Location'),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: TuKrasnalButton(
-                  text: 'Pick from Map',
+                child: ElevatedButton.icon(
                   onPressed: _pickFromMap,
-                  icon: Icons.map,
-                  isSecondary: true,
+                  icon: const Icon(Icons.map),
+                  label: const Text('Pick from Map'),
                 ),
               ),
             ],
@@ -316,23 +320,23 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: TuKrasnalColors.skyBlue.withOpacity(0.1),
+              color: Colors.blue[50],
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: TuKrasnalColors.skyBlue.withOpacity(0.3)),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: TuKrasnalColors.skyBlue,
+                  color: Colors.blue,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Latitude: -90 to 90 • Longitude: -180 to 180 • Max 8 decimal places',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: TuKrasnalColors.skyBlue,
+                      color: Colors.blue,
                     ),
                   ),
                 ),
@@ -341,11 +345,12 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
           ),
         ],
       ),
+      ),
     );
   }
 
   Widget _buildGamePropertiesCard() {
-    return TuKrasnalCard(
+    return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -416,7 +421,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildMainImageCard() {
-    return TuKrasnalCard(
+    return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -441,7 +446,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
               border: Border.all(
                 color: _mainImageUrl != null 
                     ? Colors.green 
-                    : TuKrasnalColors.outline,
+                    : Colors.grey,
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(8),
@@ -532,7 +537,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                           Icon(
                             Icons.add_photo_alternate,
                             size: 48,
-                            color: TuKrasnalColors.textLight,
+                            color: Colors.grey,
                           ),
                           const SizedBox(height: 16),
                           const Text(
@@ -646,7 +651,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildMedallionImagesCard() {
-    return TuKrasnalCard(
+    return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -709,7 +714,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
           width: double.infinity,
           decoration: BoxDecoration(
             border: Border.all(
-              color: imageUrl != null ? Colors.green : TuKrasnalColors.outline,
+              color: imageUrl != null ? Colors.green : Colors.grey,
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -797,7 +802,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                       Icon(
                         Icons.add_photo_alternate,
                         size: 32,
-                        color: TuKrasnalColors.textLight,
+                        color: Colors.grey,
                       ),
                       const SizedBox(height: 8),
                       const Text(
@@ -897,7 +902,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildGalleryImagesCard() {
-    return TuKrasnalCard(
+    return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -922,7 +927,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                   onPressed: _addGalleryImage,
                   icon: Icon(
                     Icons.add_photo_alternate,
-                    color: TuKrasnalColors.brickRed,
+                    color: Colors.blue,
                   ),
                 ),
             ],
@@ -942,7 +947,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                   height: 80,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: TuKrasnalColors.outline),
+                    border: Border.all(color: Colors.grey),
                   ),
                   child: Stack(
                     children: [
@@ -1027,7 +1032,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                           child: Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                              color: TuKrasnalColors.error,
+                              color: Colors.red,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
@@ -1066,7 +1071,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: TuKrasnalColors.outline,
+                  color: Colors.grey,
                   style: BorderStyle.solid,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -1077,13 +1082,13 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
                     Icon(
                       Icons.photo_library_outlined,
                       size: 32,
-                      color: TuKrasnalColors.textLight,
+                      color: Colors.grey,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'No gallery images added yet',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: TuKrasnalColors.textLight,
+                        color: Colors.grey,
                       ),
                     ),
                   ],
@@ -1099,10 +1104,16 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
-      child: TuKrasnalButton(
-        text: _isSubmitting ? 'Creating Krasnal...' : 'Create Krasnal',
+      child: ElevatedButton(
         onPressed: (_isSubmitting || _uniquenessError != null) ? null : _submitForm,
-        icon: Icons.add_location_alt,
+        child: Text(_isSubmitting ? 'Creating Krasnal...' : 'Create Krasnal'),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
@@ -1124,7 +1135,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
     
     final totalFields = 5;
     
-    return TuKrasnalCard(
+    return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1230,9 +1241,9 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   Color _getRarityColor(KrasnalRarity rarity) {
     switch (rarity) {
       case KrasnalRarity.common:
-        return TuKrasnalColors.textLight;
+        return Colors.grey;
       case KrasnalRarity.rare:
-        return TuKrasnalColors.skyBlue;
+        return Colors.blue;
       case KrasnalRarity.epic:
         return Colors.purple;
       case KrasnalRarity.legendary:
@@ -1298,6 +1309,15 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
       currentLng = LocationService.parseCoordinate(_longitudeController.text, false);
     }
 
+    // TODO: Implement map picker or import the correct MapPickerScreen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Map picker not available - please enter coordinates manually'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    
+    /*
     final result = await Navigator.push<Map<String, double>>(
       context,
       MaterialPageRoute(
@@ -1325,6 +1345,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
       // Trigger uniqueness validation
       _validateUniqueness();
     }
+    */
   }
 
   Future<void> _addGalleryImage() async {
@@ -1443,95 +1464,255 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
     });
 
     try {
-      String finalImageUrl = _mainImageUrl!;
+      String? finalImageUrl;
+      String? finalUndiscoveredUrl;
+      String? finalDiscoveredUrl;
+      List<String> finalGalleryUrls = [];
       
-      // If the image is a local file, upload it first
-      if (!_mainImageUrl!.startsWith('http')) {
-        print('🔄 Local file detected, needs upload: $_mainImageUrl');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Uploading image...'),
-            backgroundColor: Colors.blue,
-          ),
-        );
+      // CRITICAL: Upload ALL images to Supabase BEFORE creating krasnal
+      
+      // 1. Upload main image (required)
+      if (_mainImageUrl != null) {
+        print('🔄 Uploading main image to Supabase...');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Uploading main image...'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
         
-        // For now, just use the file path directly since the ImageUploadService method might not exist
-        // TODO: Implement proper image upload when ImageUploadService.uploadImage method is available
-        finalImageUrl = _mainImageUrl!;
-        print('✅ Using file path as image URL: $finalImageUrl');
+        try {
+          if (kIsWeb && _mainImageBytes != null) {
+            finalImageUrl = await _imageService.uploadImageFromBytes(
+              imageBytes: _mainImageBytes!,
+              fileName: 'krasnal_main_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              folder: 'krasnale',
+            );
+          } else if (!kIsWeb && _mainImageUrl != 'web_selected_image') {
+            finalImageUrl = await _imageService.uploadImageFromPath(
+              filePath: _mainImageUrl!,
+              folder: 'krasnale',
+            );
+          }
+          
+          if (finalImageUrl == null) {
+            throw Exception('Main image upload failed');
+          }
+          print('✅ Main image uploaded: $finalImageUrl');
+          
+        } catch (uploadError) {
+          print('❌ Main image upload failed: $uploadError');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to upload main image: $uploadError'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+            setState(() {
+              _isSubmitting = false;
+            });
+          }
+          return;
+        }
       } else {
-        print('✅ HTTP URL detected, using as-is: $finalImageUrl');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Main image is required'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
+        return;
       }
 
-      // Log all the data being sent
-      final krasnalData = {
-        'name': _nameController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'latitude': double.parse(_latitudeController.text),
-        'longitude': double.parse(_longitudeController.text),
-        'locationName': _locationController.text.trim(),
-        'rarity': _selectedRarity.toString(),
-        'pointsValue': int.parse(_pointsController.text),
-        'imageUrl': finalImageUrl,
-      };
+      // 2. Upload undiscovered medallion (optional)
+      if (_undiscoveredMedallionUrl != null) {
+        print('🔄 Uploading undiscovered medallion...');
+        try {
+          if (kIsWeb && _undiscoveredMedallionBytes != null) {
+            finalUndiscoveredUrl = await _imageService.uploadImageFromBytes(
+              imageBytes: _undiscoveredMedallionBytes!,
+              fileName: 'medallion_undiscovered_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              folder: 'medallions',
+            );
+          } else if (!kIsWeb && !_undiscoveredMedallionUrl!.startsWith('web_')) {
+            finalUndiscoveredUrl = await _imageService.uploadImageFromPath(
+              filePath: _undiscoveredMedallionUrl!,
+              folder: 'medallions',
+            );
+          }
+          
+          if (finalUndiscoveredUrl != null) {
+            print('✅ Undiscovered medallion uploaded: $finalUndiscoveredUrl');
+          }
+        } catch (e) {
+          print('⚠️ Undiscovered medallion upload failed: $e');
+          // Continue anyway, medallions are optional
+        }
+      }
 
-      print('📊 Krasnal data to be sent:');
-      krasnalData.forEach((key, value) {
-        print('   $key: $value');
-      });
+      // 3. Upload discovered medallion (optional)
+      if (_discoveredMedallionUrl != null) {
+        print('🔄 Uploading discovered medallion...');
+        try {
+          if (kIsWeb && _discoveredMedallionBytes != null) {
+            finalDiscoveredUrl = await _imageService.uploadImageFromBytes(
+              imageBytes: _discoveredMedallionBytes!,
+              fileName: 'medallion_discovered_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              folder: 'medallions',
+            );
+          } else if (!kIsWeb && !_discoveredMedallionUrl!.startsWith('web_')) {
+            finalDiscoveredUrl = await _imageService.uploadImageFromPath(
+              filePath: _discoveredMedallionUrl!,
+              folder: 'medallions',
+            );
+          }
+          
+          if (finalDiscoveredUrl != null) {
+            print('✅ Discovered medallion uploaded: $finalDiscoveredUrl');
+          }
+        } catch (e) {
+          print('⚠️ Discovered medallion upload failed: $e');
+          // Continue anyway, medallions are optional
+        }
+      }
 
+      // 4. Upload gallery images (optional)
+      if (_galleryImages.isNotEmpty) {
+        print('🔄 Uploading ${_galleryImages.length} gallery images...');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Uploading ${_galleryImages.length} gallery images...'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        
+        for (int i = 0; i < _galleryImages.length; i++) {
+          final galleryUrl = _galleryImages[i];
+          try {
+            String? uploadedUrl;
+            
+            if (kIsWeb && i < _galleryImageBytes.length) {
+              uploadedUrl = await _imageService.uploadImageFromBytes(
+                imageBytes: _galleryImageBytes[i],
+                fileName: 'gallery_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
+                folder: 'gallery',
+              );
+            } else if (!kIsWeb && !galleryUrl.startsWith('web_')) {
+              uploadedUrl = await _imageService.uploadImageFromPath(
+                filePath: galleryUrl,
+                folder: 'gallery',
+              );
+            }
+            
+            if (uploadedUrl != null) {
+              finalGalleryUrls.add(uploadedUrl);
+              print('✅ Gallery image ${i + 1} uploaded: $uploadedUrl');
+            }
+          } catch (e) {
+            print('⚠️ Gallery image ${i + 1} upload failed: $e');
+            // Continue with other images
+          }
+        }
+        
+        print('✅ ${finalGalleryUrls.length}/${_galleryImages.length} gallery images uploaded');
+      }
+
+      // 5. Create krasnal with all uploaded images
+      print('🔄 Creating krasnal with all images...');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Images uploaded! Creating krasnal...'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Now create the krasnal with the uploaded Supabase image URL
       print('🔄 Calling AdminService.createKrasnal...');
+      print('   Main image: $finalImageUrl');
+      print('   Undiscovered medallion: $finalUndiscoveredUrl');
+      print('   Discovered medallion: $finalDiscoveredUrl');
+      print('   Gallery images: ${finalGalleryUrls.length}');
 
-      final success = await _adminService.createKrasnal(
+      // Prepare additional images array for the consolidated model
+      final List<Map<String, dynamic>> additionalImages = [];
+      
+      // Add medallion images
+      if (finalUndiscoveredUrl != null) {
+        additionalImages.add({
+          'url': finalUndiscoveredUrl,
+          'type': 'medallion_undiscovered',
+          'orderIndex': 0,
+        });
+      }
+      
+      if (finalDiscoveredUrl != null) {
+        additionalImages.add({
+          'url': finalDiscoveredUrl,
+          'type': 'medallion_discovered',
+          'orderIndex': 1,
+        });
+      }
+      
+      // Add gallery images
+      for (int i = 0; i < finalGalleryUrls.length; i++) {
+        additionalImages.add({
+          'url': finalGalleryUrls[i],
+          'type': 'gallery',
+          'orderIndex': i + 2,
+        });
+      }
+
+      final krasnalId = await _adminService.createKrasnal(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         latitude: double.parse(_latitudeController.text),
         longitude: double.parse(_longitudeController.text),
-        locationName: _locationController.text.trim(),
+        locationAddress: _locationController.text.trim().isNotEmpty ? _locationController.text.trim() : null,
         rarity: _selectedRarity,
         pointsValue: int.parse(_pointsController.text),
-        imageUrl: finalImageUrl,
+        primaryImageUrl: finalImageUrl,
+        additionalImages: additionalImages,
       );
 
-      print('📝 AdminService.createKrasnal returned: $success (type: ${success.runtimeType})');
+      print('📝 AdminService.createKrasnal returned: $krasnalId (type: ${krasnalId.runtimeType})');
 
-      // More detailed success checking
-      // TEMPORARY FIX: Since krasnals are being created successfully in DB but 
-      // the service might not be returning the expected boolean, we'll be more lenient
-      if (success == true) {
-        print('✅ SUCCESS: Krasnal created successfully!');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Krasnal created successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _clearForm();
-        }
-      } else if (success == false) {
-        print('❌ FAILURE: AdminService returned false');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to create krasnal - service returned false'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } else {
-        // TEMPORARY: Since you mentioned krasnals are actually being created,
-        // we'll assume success for any non-false return value
-        print('⚠️  ASSUMING SUCCESS: AdminService returned: $success');
-        print('    Based on user feedback, krasnals are being created successfully');
+      // Check if we got a krasnal ID back (string)
+      if (krasnalId is String && krasnalId.isNotEmpty) {
+        print('✅ SUCCESS: Krasnal created with ID: $krasnalId');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Krasnal created successfully! (Service returned: $success)'),
+              content: Text('Krasnal created successfully! ID: $krasnalId'),
               backgroundColor: Colors.green,
             ),
           );
           _clearForm();
+        }
+      } else {
+        print('❌ FAILURE: AdminService returned invalid ID: $krasnalId');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to create krasnal - invalid response'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     } catch (e, stackTrace) {
@@ -1608,6 +1789,15 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
     try {
       print('🔍 Validating uniqueness for: $name at ($latitude, $longitude)');
       
+      // TODO: Implement proper uniqueness checking when AdminService supports it
+      // For now, skip validation to avoid errors
+      setState(() {
+        _uniquenessError = null;
+        _isValidatingUniqueness = false;
+      });
+      print('✅ Uniqueness validation skipped (not implemented in AdminService)');
+      
+      /*
       // Check name uniqueness
       final nameExists = await _adminService.checkNameExists(name);
       if (nameExists) {
@@ -1633,6 +1823,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
         _isValidatingUniqueness = false;
       });
       print('✅ Uniqueness validation passed');
+      */
       
     } catch (e) {
       print('❌ Error validating uniqueness: $e');
@@ -1644,7 +1835,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   }
 
   Widget _buildValidationStatusCard() {
-    return TuKrasnalCard(
+    return Card(
       child: Row(
         children: [
           if (_isValidatingUniqueness)

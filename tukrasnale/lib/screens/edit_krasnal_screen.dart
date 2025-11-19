@@ -9,10 +9,11 @@ import '../models/krasnal_models.dart';
 import '../services/location_service.dart';
 import '../services/admin_service.dart';
 import '../services/admin_service_extensions.dart';
+import '../services/supabase_image_service.dart';
 import '../screens/map_picker_screen.dart';
 
 class EditKrasnalScreen extends StatefulWidget {
-  final KrasnalModel krasnal;
+  final Krasnal krasnal;
 
   const EditKrasnalScreen({
     super.key,
@@ -26,6 +27,7 @@ class EditKrasnalScreen extends StatefulWidget {
 class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
   final _formKey = GlobalKey<FormState>();
   final AdminService _adminService = AdminService();
+  final SupabaseImageService _imageService = SupabaseImageService();
   
   // Form controllers
   late final TextEditingController _nameController;
@@ -66,18 +68,33 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
 
   void _initializeFormData() {
     _nameController = TextEditingController(text: widget.krasnal.name);
-    _descriptionController = TextEditingController(text: widget.krasnal.description ?? '');
-    _locationController = TextEditingController(text: widget.krasnal.locationName ?? '');
-    _latitudeController = TextEditingController(text: widget.krasnal.latitude.toString());
-    _longitudeController = TextEditingController(text: widget.krasnal.longitude.toString());
-    _pointsController = TextEditingController(text: widget.krasnal.pointsValue.toString());
+    _descriptionController = TextEditingController(text: widget.krasnal.description);
+    _locationController = TextEditingController(text: widget.krasnal.location.address ?? '');
+    _latitudeController = TextEditingController(text: widget.krasnal.location.latitude.toString());
+    _longitudeController = TextEditingController(text: widget.krasnal.location.longitude.toString());
     
-    _selectedRarity = widget.krasnal.rarity;
-    _mainImageUrl = widget.krasnal.imageUrl;
-    // TODO: Initialize medallion and gallery images when model is updated
-    // _undiscoveredMedallionUrl = widget.krasnal.undiscoveredMedallionUrl;
-    // _discoveredMedallionUrl = widget.krasnal.discoveredMedallionUrl;
-    // _galleryImages = widget.krasnal.galleryImages ?? [];
+    // Get points value from metadata or use default
+    int pointsValue = 10; // Default value
+    if (widget.krasnal.metadata != null && widget.krasnal.metadata!['pointsValue'] != null) {
+      pointsValue = widget.krasnal.metadata!['pointsValue'] as int;
+    }
+    _pointsController = TextEditingController(text: pointsValue.toString());
+    
+    // Get rarity from metadata or use default
+    _selectedRarity = KrasnalRarity.common; // Default value
+    if (widget.krasnal.metadata != null && widget.krasnal.metadata!['rarity'] != null) {
+      final rarityString = widget.krasnal.metadata!['rarity'] as String;
+      _selectedRarity = KrasnalRarity.values.firstWhere(
+        (r) => r.name == rarityString,
+        orElse: () => KrasnalRarity.common,
+      );
+    }
+    
+    // Get primary image from images array or fallback
+    _mainImageUrl = null;
+    if (widget.krasnal.images.isNotEmpty) {
+      _mainImageUrl = widget.krasnal.images.first.url;
+    }
     
     print('✅ Form initialized with:');
     print('   Name: ${_nameController.text}');
@@ -97,8 +114,8 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
 
     // Skip validation if values haven't changed
     if (name == widget.krasnal.name && 
-        latitude == widget.krasnal.latitude && 
-        longitude == widget.krasnal.longitude) {
+        latitude == widget.krasnal.location.latitude && 
+        longitude == widget.krasnal.location.longitude) {
       setState(() {
         _uniquenessError = null;
       });
@@ -156,8 +173,12 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit ${widget.krasnal.name}'),
-        backgroundColor: TuKrasnalColors.background,
+        title: Text(
+          'Edit ${widget.krasnal.name}',
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.red[700],
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (_isSubmitting)
             const Padding(
@@ -171,7 +192,7 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
         ],
       ),
       body: Container(
-        color: TuKrasnalColors.background,
+        color: Colors.grey[100],
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Form(
@@ -202,13 +223,13 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
                 _buildMainImageCard(),
                 const SizedBox(height: 16),
                 
-                // Medallion Images Card (TODO: Implement when model supports it)
-                // _buildMedallionImagesCard(),
-                // const SizedBox(height: 16),
+                // Medallion Images Card
+                _buildMedallionImagesCard(),
+                const SizedBox(height: 16),
                 
-                // Gallery Images Card (TODO: Implement when model supports it)
-                // _buildGalleryImagesCard(),
-                // const SizedBox(height: 24),
+                // Gallery Images Card
+                _buildGalleryImagesCard(),
+                const SizedBox(height: 24),
                 
                 // Submit Button
                 _buildSubmitButton(),
@@ -228,44 +249,47 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
   }
 
   Widget _buildValidationStatusCard() {
-    return TuKrasnalCard(
-      child: Row(
-        children: [
-          if (_isValidatingUniqueness)
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else if (_uniquenessError != null)
-            Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 20,
-            )
-          else
-            Icon(
-              Icons.check_circle_outline,
-              color: Colors.green,
-              size: 20,
-            ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _isValidatingUniqueness
-                  ? 'Checking name and coordinate uniqueness...'
-                  : _uniquenessError ?? 'Name and coordinates are unique',
-              style: TextStyle(
-                color: _isValidatingUniqueness
-                    ? Colors.orange
-                    : _uniquenessError != null
-                        ? Colors.red
-                        : Colors.green,
-                fontWeight: FontWeight.bold,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            if (_isValidatingUniqueness)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (_uniquenessError != null)
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 20,
+              )
+            else
+              Icon(
+                Icons.check_circle_outline,
+                color: Colors.green,
+                size: 20,
+              ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _isValidatingUniqueness
+                    ? 'Checking name and coordinate uniqueness...'
+                    : _uniquenessError ?? 'Name and coordinates are unique',
+                style: TextStyle(
+                  color: _isValidatingUniqueness
+                      ? Colors.orange
+                      : _uniquenessError != null
+                          ? Colors.red
+                          : Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -926,14 +950,31 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
   }
 
   bool _hasFormChanges() {
+    // Get current values from metadata for comparison
+    int originalPointsValue = 10;
+    if (widget.krasnal.metadata != null && widget.krasnal.metadata!['pointsValue'] != null) {
+      originalPointsValue = widget.krasnal.metadata!['pointsValue'] as int;
+    }
+    
+    KrasnalRarity originalRarity = KrasnalRarity.common;
+    if (widget.krasnal.metadata != null && widget.krasnal.metadata!['rarity'] != null) {
+      final rarityString = widget.krasnal.metadata!['rarity'] as String;
+      originalRarity = KrasnalRarity.values.firstWhere(
+        (r) => r.name == rarityString,
+        orElse: () => KrasnalRarity.common,
+      );
+    }
+    
     return _nameController.text != widget.krasnal.name ||
-           _descriptionController.text != (widget.krasnal.description ?? '') ||
-           _locationController.text != (widget.krasnal.locationName ?? '') ||
-           double.tryParse(_latitudeController.text) != widget.krasnal.latitude ||
-           double.tryParse(_longitudeController.text) != widget.krasnal.longitude ||
-           int.tryParse(_pointsController.text) != widget.krasnal.pointsValue ||
-           _selectedRarity != widget.krasnal.rarity ||
-           _mainImageUrl != widget.krasnal.imageUrl;
+           _descriptionController.text != widget.krasnal.description ||
+           _locationController.text != (widget.krasnal.location.address ?? '') ||
+           double.tryParse(_latitudeController.text) != widget.krasnal.location.latitude ||
+           double.tryParse(_longitudeController.text) != widget.krasnal.location.longitude ||
+           int.tryParse(_pointsController.text) != originalPointsValue ||
+           _selectedRarity != originalRarity ||
+           (_mainImageUrl != null && widget.krasnal.images.isNotEmpty 
+               ? _mainImageUrl != widget.krasnal.images.first.url 
+               : _mainImageUrl != null);
   }
 
   Color _getRarityColor(KrasnalRarity rarity) {
@@ -1062,73 +1103,110 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
     });
 
     try {
-      String finalImageUrl = _mainImageUrl!;
+      String? finalImageUrl = _mainImageUrl;
       
-      // Handle image upload if needed
-      if (!_mainImageUrl!.startsWith('http')) {
-        print('🔄 New image detected: $_mainImageUrl');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Processing image...'),
-            backgroundColor: Colors.blue,
-          ),
-        );
+      // Handle image upload if a new image was selected
+      if (_mainImageUrl != null && !_mainImageUrl!.startsWith('http')) {
+        print('🔄 New image detected, uploading to Supabase...');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Uploading new image...'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        }
         
-        // TODO: Implement proper image upload when ImageUploadService is available
-        finalImageUrl = _mainImageUrl!;
-        print('✅ Using image path: $finalImageUrl');
+        try {
+          if (kIsWeb && _mainImageBytes != null) {
+            // Web upload from bytes
+            finalImageUrl = await _imageService.uploadImageFromBytes(
+              imageBytes: _mainImageBytes!,
+              fileName: 'krasnal_main_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              folder: 'krasnale',
+            );
+          } else if (!kIsWeb && _mainImageUrl != 'web_selected_image') {
+            // Mobile upload from file path
+            finalImageUrl = await _imageService.uploadImageFromPath(
+              filePath: _mainImageUrl!,
+              folder: 'krasnale',
+            );
+          }
+          
+          if (finalImageUrl == null) {
+            throw Exception('Failed to upload new image');
+          }
+          
+          print('✅ New image uploaded: $finalImageUrl');
+          
+          // TODO: Delete old image from Supabase if it exists
+          if (widget.krasnal.images.isNotEmpty && 
+              widget.krasnal.images.first.url.startsWith('http') &&
+              widget.krasnal.images.first.url != finalImageUrl) {
+            try {
+              await _imageService.deleteImage(widget.krasnal.images.first.url);
+              print('✅ Old image deleted: ${widget.krasnal.images.first.url}');
+            } catch (e) {
+              print('⚠️ Failed to delete old image: $e');
+              // Continue anyway
+            }
+          }
+          
+        } catch (uploadError) {
+          print('❌ Image upload failed: $uploadError');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to upload new image: $uploadError'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            setState(() {
+              _isSubmitting = false;
+            });
+          }
+          return;
+        }
       }
 
-      print('🔄 Calling AdminService.updateKrasnal...');
+      print('🔄 Updating krasnal with image URL: $finalImageUrl');
 
       // For now, we'll call createKrasnal with the updated data since updateKrasnal might not be properly implemented
       // TODO: Replace with proper updateKrasnal when available
-      final success = await _adminService.createKrasnal(
+      final krasnalId = await _adminService.createKrasnal(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         latitude: double.parse(_latitudeController.text),
         longitude: double.parse(_longitudeController.text),
-        locationName: _locationController.text.trim(),
+        locationAddress: _locationController.text.trim().isNotEmpty ? _locationController.text.trim() : null,
         rarity: _selectedRarity,
         pointsValue: int.parse(_pointsController.text),
-        imageUrl: finalImageUrl,
+        primaryImageUrl: finalImageUrl,
       );
 
-      print('📝 AdminService operation returned: $success');
+      print('📝 AdminService operation returned: $krasnalId');
 
-      // More detailed success checking (similar to add screen)
-      if (success == true) {
-        print('✅ SUCCESS: Krasnal updated successfully!');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Krasnal updated successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.of(context).pop(true); // Return true to indicate changes
-        }
-      } else if (success == false) {
-        print('❌ FAILURE: AdminService returned false');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to update krasnal - service returned false'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } else {
-        // TEMPORARY: Assume success for any non-false return value
-        print('⚠️  ASSUMING SUCCESS: AdminService returned: $success');
+      // Check if we got a krasnal ID back (string)
+      if (krasnalId is String && krasnalId.isNotEmpty) {
+        print('✅ SUCCESS: Krasnal updated with ID: $krasnalId');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Krasnal updated successfully! (Service returned: $success)'),
+              content: Text('Krasnal updated successfully! ID: $krasnalId'),
               backgroundColor: Colors.green,
             ),
           );
           Navigator.of(context).pop(true); // Return true to indicate changes
+        }
+      } else {
+        print('❌ FAILURE: AdminService returned invalid response: $krasnalId');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to update krasnal - invalid response'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     } catch (e) {
@@ -1159,5 +1237,90 @@ class _EditKrasnalScreenState extends State<EditKrasnalScreen> {
     _longitudeController.dispose();
     _pointsController.dispose();
     super.dispose();
+  }
+
+  // Additional image card methods
+  Widget _buildMedallionImagesCard() {
+    return TuKrasnalCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Medallion Images',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Optional - Upload undiscovered and discovered medallion images',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: TuKrasnalColors.textLight,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Placeholder for medallion images
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: const Center(
+              child: Text(
+                'Medallion images will be supported when\nKrasnalModel is updated to include these fields',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGalleryImagesCard() {
+    return TuKrasnalCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Gallery Images',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Optional - Upload additional gallery images',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: TuKrasnalColors.textLight,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Placeholder for gallery images
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: const Center(
+              child: Text(
+                'Gallery images will be supported when\nKrasnalModel is updated to include these fields',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

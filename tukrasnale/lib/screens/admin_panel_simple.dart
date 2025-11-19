@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/enhanced_add_krasnal_tab.dart';
+import '../screens/manage_krasnale_tab.dart';
 import '../widgets/app_logo.dart';
 import '../theme/app_theme.dart';
 
@@ -49,38 +50,10 @@ class _AdminPanelSimpleState extends State<AdminPanelSimple> with TickerProvider
                 controller: _tabController,
                 children: [
                   const EnhancedAddKrasnalTab(),
-                  _buildManageTab(),
+                  const ManageKrasnaleTab(), // Enhanced version with images and edit/view
                   _buildReportsTab(),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildManageTab() {
-    return Container(
-      color: TuKrasnalColors.background,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.manage_accounts,
-              size: 64,
-              color: TuKrasnalColors.darkBrown,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Manage Krasnale',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'View and edit existing krasnale',
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),

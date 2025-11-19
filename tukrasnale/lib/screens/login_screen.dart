@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+//import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/app_logo.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';

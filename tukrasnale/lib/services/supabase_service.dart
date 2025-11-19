@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/krasnal_models.dart';
-import 'dart:math' as math;
 
 class SupabaseService {
   static SupabaseService? _instance;
@@ -72,19 +71,58 @@ class SupabaseService {
   }
   
   // Krasnal methods
-  Future<List<KrasnalModel>> getAllKrasnale() async {
+  Future<List<Krasnal>> getAllKrasnale() async {
     final response = await _client
         .from('krasnale')
-        .select()
-        .eq('is_active', true)
+        .select('''
+          id,
+          name,
+          description,
+          location:locations(
+            id,
+            latitude,
+            longitude,
+            address,
+            country,
+            city
+          ),
+          metadata,
+          primary_image_url,
+          created_at,
+          images(
+            id,
+            url,
+            type,
+            order_index
+          )
+        ''')
         .order('name');
         
-    return (response as List)
-        .map((json) => KrasnalModel.fromJson(json))
-        .toList();
+    return response.map<Krasnal>((json) {
+      final location = json['location'];
+      final images = json['images'] as List<dynamic>?;
+      
+      return Krasnal(
+        id: json['id'],
+        name: json['name'],
+        description: json['description'] ?? '',
+        location: KrasnalLocation(
+          latitude: location['latitude'],
+          longitude: location['longitude'],
+          address: location['address'],
+        ),
+        metadata: json['metadata'] != null ? Map<String, dynamic>.from(json['metadata']) : null,
+        createdAt: DateTime.parse(json['created_at']),
+        images: images?.map((img) => KrasnalImage(
+          id: img['id'],
+          url: img['url'],
+          uploadedAt: DateTime.now(), // Default since we don't have this field
+        )).toList() ?? [],
+      );
+    }).toList();
   }
 
-  Future<List<KrasnalModel>> getNearbyKrasnale({
+  Future<List<Krasnal>> getNearbyKrasnale({
     required double latitude,
     required double longitude,
     double radiusKm = 5.0,
@@ -94,25 +132,26 @@ class SupabaseService {
     return allKrasnale.where((krasnal) {
       double distance = _calculateDistance(
         latitude, longitude,
-        krasnal.latitude, krasnal.longitude,
+        krasnal.location.latitude, krasnal.location.longitude,
       );
       return distance <= (radiusKm * 1000); // Convert to meters
     }).toList();
   }
 
-  Future<List<KrasnalModel>> getDiscoverableKrasnale({
+  Future<List<Krasnal>> getDiscoverableKrasnale({
     required double userLat,
     required double userLng,
+    double discoveryRadiusMeters = 50.0, // Default discovery radius
   }) async {
     final allKrasnale = await getAllKrasnale();
-    List<KrasnalModel> discoverable = [];
+    List<Krasnal> discoverable = [];
     
     for (var krasnal in allKrasnale) {
       double distance = _calculateDistance(
         userLat, userLng,
-        krasnal.latitude, krasnal.longitude,
+        krasnal.location.latitude, krasnal.location.longitude,
       );
-      if (distance <= krasnal.discoveryRadius) {
+      if (distance <= discoveryRadiusMeters) {
         discoverable.add(krasnal);
       }
     }
@@ -139,19 +178,17 @@ class SupabaseService {
   }
 
   // User discovery methods
-  Future<List<UserDiscovery>> getUserDiscoveries(String userId) async {
+  Future<List<Map<String, dynamic>>> getUserDiscoveries(String userId) async {
     final response = await _client
         .from('user_discoveries')
         .select('*, krasnale(*)')
         .eq('user_id', userId)
         .order('discovered_at', ascending: false);
         
-    return (response as List)
-        .map((json) => UserDiscovery.fromJson(json))
-        .toList();
+    return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<UserDiscovery?> discoverKrasnal({
+  Future<Map<String, dynamic>?> discoverKrasnal({
     required String krasnalId,
     required double userLat,
     required double userLng,
@@ -169,7 +206,7 @@ class SupabaseService {
           .select()
           .single();
           
-      return UserDiscovery.fromJson(response);
+      return response;
     } catch (e) {
       throw Exception('Failed to discover krasnal: $e');
     }
@@ -189,26 +226,24 @@ class SupabaseService {
   }
 
   // User profile methods
-  Future<AppUser?> getUserProfile(String userId) async {
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
     final response = await _client
-        .from('users')
+        .from('user_profiles')
         .select()
-        .eq('id', userId)
+        .eq('user_id', userId)
         .maybeSingle();
         
-    if (response == null) return null;
-    return AppUser.fromJson(response);
+    return response;
   }
 
   // Leaderboard methods
-  Future<List<LeaderboardEntry>> getLeaderboard({int limit = 50}) async {
+  Future<List<Map<String, dynamic>>> getLeaderboard({int limit = 50}) async {
     final response = await _client
-        .from('leaderboard')
-        .select()
+        .from('user_profiles')
+        .select('username, full_name, total_points, discoveries_count')
+        .order('total_points', ascending: false)
         .limit(limit);
         
-    return (response as List)
-        .map((json) => LeaderboardEntry.fromJson(json))
-        .toList();
+    return List<Map<String, dynamic>>.from(response);
   }
 }

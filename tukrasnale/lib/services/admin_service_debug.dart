@@ -5,16 +5,35 @@ class AdminServiceDebug {
   final _supabase = Supabase.instance.client;
 
   // Debug version of createKrasnal with comprehensive logging
-  Future<bool> createKrasnalDebug(KrasnalModel krasnal) async {
+  Future<bool> createKrasnalDebug(Krasnal krasnal) async {
     print('🔄 AdminService.createKrasnal called');
     print('📝 Input data:');
     print('   Name: ${krasnal.name}');
     print('   Description: ${krasnal.description}');
-    print('   Location: ${krasnal.latitude}, ${krasnal.longitude}');
-    print('   Location Name: ${krasnal.locationName}');
-    print('   Rarity: ${krasnal.rarity}');
-    print('   Points: ${krasnal.pointsValue}');
-    print('   Main Image: ${krasnal.imageUrl}');
+    print('   Location: ${krasnal.location.latitude}, ${krasnal.location.longitude}');
+    print('   Location Address: ${krasnal.location.address}');
+    
+    // Get rarity from metadata
+    String rarityValue = 'common';
+    if (krasnal.metadata != null && krasnal.metadata!['rarity'] != null) {
+      rarityValue = krasnal.metadata!['rarity'] as String;
+    }
+    print('   Rarity: $rarityValue');
+    
+    // Get points from metadata
+    int pointsValue = 10;
+    if (krasnal.metadata != null && krasnal.metadata!['pointsValue'] != null) {
+      pointsValue = krasnal.metadata!['pointsValue'] as int;
+    }
+    print('   Points: $pointsValue');
+    
+    // Check for primary image
+    String? imageUrl;
+    if (krasnal.images.isNotEmpty) {
+      imageUrl = krasnal.images.first.url;
+    }
+    print('   Primary Image: $imageUrl');
+    print('   Total Images: ${krasnal.images.length}');
     
     try {
       // Step 1: Check authentication
@@ -61,33 +80,15 @@ class AdminServiceDebug {
       
       print('✅ User confirmed as admin');
       
-      // Step 3: Prepare data for insertion
-      String rarityValue;
-      switch (krasnal.rarity) {
-        case KrasnalRarity.common:
-          rarityValue = 'common';
-          break;
-        case KrasnalRarity.rare:
-          rarityValue = 'rare';
-          break;
-        case KrasnalRarity.epic:
-          rarityValue = 'epic';
-          break;
-        case KrasnalRarity.legendary:
-          rarityValue = 'legendary';
-          break;
-      }
-      
+      // Step 3: Prepare data for insertion - using consolidated model structure
       final insertData = {
         'name': krasnal.name,
         'description': krasnal.description,
-        'latitude': krasnal.latitude,
-        'longitude': krasnal.longitude,
-        'location_name': krasnal.locationName,
-        'rarity': rarityValue,
-        'points_value': krasnal.pointsValue,
+        'latitude': krasnal.location.latitude,
+        'longitude': krasnal.location.longitude,
+        'metadata': krasnal.metadata,
+        'primary_image_url': imageUrl,
         'is_active': true,
-        'image_url': krasnal.imageUrl,
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       };

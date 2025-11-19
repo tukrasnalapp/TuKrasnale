@@ -30,29 +30,51 @@ class AdminService {
     String? description,
     required double latitude,
     required double longitude,
-    String? locationName,
-    required KrasnalRarity rarity,
-    required int pointsValue,
-    String? imageUrl,
-    String? undiscoveredMedallionUrl,
-    String? discoveredMedallionUrl,
-    List<String> galleryImages = const [],
+    String? locationAddress,
+    KrasnalRarity rarity = KrasnalRarity.common,
+    int pointsValue = 10,
+    String? primaryImageUrl,
+    List<Map<String, dynamic>> additionalImages = const [],
   }) async {
-    final response = await _supabase.from('krasnale').insert({
-      'name': name,
-      'description': description,
+    // First create the location
+    final locationResponse = await _supabase.from('locations').insert({
       'latitude': latitude,
       'longitude': longitude,
-      'location_name': locationName,
-      'rarity': rarity.name,
-      'points_value': pointsValue,
-      'image_url': imageUrl,
-      'undiscovered_medallion_url': undiscoveredMedallionUrl,
-      'discovered_medallion_url': discoveredMedallionUrl,
-      'gallery_images': galleryImages,
+      'address': locationAddress,
     }).select().single();
 
-    return response['id'];
+    final locationId = locationResponse['id'];
+
+    // Prepare metadata
+    final metadata = {
+      'rarity': rarity.name,
+      'pointsValue': pointsValue,
+    };
+
+    // Create the krasnal
+    final krasnalResponse = await _supabase.from('krasnale').insert({
+      'name': name,
+      'description': description ?? '',
+      'location_id': locationId,
+      'metadata': metadata,
+      'primary_image_url': primaryImageUrl,
+    }).select().single();
+
+    final krasnalId = krasnalResponse['id'];
+
+    // Insert additional images if provided
+    if (additionalImages.isNotEmpty) {
+      final imageInserts = additionalImages.map((image) => {
+        'krasnal_id': krasnalId,
+        'url': image['url'],
+        'type': image['type'] ?? 'gallery',
+        'order_index': image['orderIndex'] ?? 0,
+      }).toList();
+
+      await _supabase.from('images').insert(imageInserts);
+    }
+
+    return krasnalId;
   }
 
   // Update existing Krasnal
@@ -72,13 +94,55 @@ class AdminService {
   }
 
   // Get all Krasnale for admin management
-  Future<List<KrasnalModel>> getAllKrasnale() async {
+  Future<List<Krasnal>> getAllKrasnale() async {
     final response = await _supabase
         .from('krasnale')
-        .select('*')
+        .select('''
+          id,
+          name,
+          description,
+          location:locations(
+            id,
+            latitude,
+            longitude,
+            address,
+            country,
+            city
+          ),
+          metadata,
+          primary_image_url,
+          created_at,
+          images(
+            id,
+            url,
+            type,
+            order_index
+          )
+        ''')
         .order('created_at', ascending: false);
 
-    return response.map<KrasnalModel>((json) => KrasnalModel.fromJson(json)).toList();
+    return response.map<Krasnal>((json) {
+      final location = json['location'];
+      final images = json['images'] as List<dynamic>?;
+      
+      return Krasnal(
+        id: json['id'],
+        name: json['name'],
+        description: json['description'] ?? '',
+        location: KrasnalLocation(
+          latitude: location['latitude'],
+          longitude: location['longitude'],
+          address: location['address'],
+        ),
+        metadata: json['metadata'] != null ? Map<String, dynamic>.from(json['metadata']) : null,
+        createdAt: DateTime.parse(json['created_at']),
+        images: images?.map((img) => KrasnalImage(
+          id: img['id'],
+          url: img['url'],
+          uploadedAt: DateTime.now(), // Default since we don't have this field
+        )).toList() ?? [],
+      );
+    }).toList();
   }
 
   // Get all reports for admin review

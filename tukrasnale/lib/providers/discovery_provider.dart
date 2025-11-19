@@ -1,23 +1,38 @@
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
+// import 'package:geolocator/geolocator.dart';
 import '../models/krasnal_models.dart';
 import '../services/location_service.dart' as location_service;
 import '../services/supabase_service.dart';
 
+// Discovery result class for discovery attempts
+class DiscoveryResult {
+  final bool canDiscover;
+  final double distance;
+  final Krasnal krasnal;
+  final String? reason;
+
+  const DiscoveryResult({
+    required this.canDiscover,
+    required this.distance,
+    required this.krasnal,
+    this.reason,
+  });
+}
+
 class DiscoveryProvider extends ChangeNotifier {
-  List<KrasnalModel> _allKrasnale = [];
-  List<KrasnalModel> _nearbyKrasnale = [];
-  List<KrasnalModel> _discoverableKrasnale = [];
-  List<UserDiscovery> _userDiscoveries = [];
+  List<Krasnal> _allKrasnale = [];
+  List<Krasnal> _nearbyKrasnale = [];
+  List<Krasnal> _discoverableKrasnale = [];
+  List<Map<String, dynamic>> _userDiscoveries = [];
   location_service.Position? _userPosition;
   bool _isLoading = false;
   String? _errorMessage;
 
   // Getters
-  List<KrasnalModel> get allKrasnale => _allKrasnale;
-  List<KrasnalModel> get nearbyKrasnale => _nearbyKrasnale;
-  List<KrasnalModel> get discoverableKrasnale => _discoverableKrasnale;
-  List<UserDiscovery> get userDiscoveries => _userDiscoveries;
+  List<Krasnal> get allKrasnale => _allKrasnale;
+  List<Krasnal> get nearbyKrasnale => _nearbyKrasnale;
+  List<Krasnal> get discoverableKrasnale => _discoverableKrasnale;
+  List<Map<String, dynamic>> get userDiscoveries => _userDiscoveries;
   location_service.Position? get userPosition => _userPosition;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -46,12 +61,10 @@ class DiscoveryProvider extends ChangeNotifier {
   Future<void> updateUserPosition() async {
     try {
       final position = await location_service.LocationService.instance.getCurrentPosition();
-      if (position != null) {
-        _userPosition = position;
-        await _updateNearbyKrasnale();
-        await _updateDiscoverableKrasnale();
-        notifyListeners();
-      }
+      _userPosition = position;
+      await _updateNearbyKrasnale();
+      await _updateDiscoverableKrasnale();
+      notifyListeners();
     } catch (e) {
       _errorMessage = 'Failed to get location: ${e.toString()}';
       notifyListeners();
@@ -102,7 +115,7 @@ class DiscoveryProvider extends ChangeNotifier {
   }
 
   // Attempt to discover a krasnal
-  Future<DiscoveryResult> attemptDiscovery(KrasnalModel krasnal) async {
+  Future<DiscoveryResult> attemptDiscovery(Krasnal krasnal) async {
     if (_userPosition == null) {
       return DiscoveryResult(
         canDiscover: false,
@@ -116,19 +129,24 @@ class DiscoveryProvider extends ChangeNotifier {
     double distance = location_service.LocationService.instance.calculateDistance(
       _userPosition!.latitude,
       _userPosition!.longitude,
-      krasnal.latitude,
-      krasnal.longitude,
+      krasnal.location.latitude,
+      krasnal.location.longitude,
     );
 
-    // Check if within discovery radius
-    bool withinRadius = distance <= krasnal.discoveryRadius;
+    // Check if within discovery radius (default 50m if not specified)
+    double discoveryRadius = 50.0; // Default discovery radius
+    if (krasnal.metadata != null && krasnal.metadata!['discoveryRadius'] != null) {
+      discoveryRadius = (krasnal.metadata!['discoveryRadius'] as num).toDouble();
+    }
+    
+    bool withinRadius = distance <= discoveryRadius;
     
     if (!withinRadius) {
       return DiscoveryResult(
         canDiscover: false,
         distance: distance,
         krasnal: krasnal,
-        reason: 'Too far away (${distance.toStringAsFixed(0)}m). Get within ${krasnal.discoveryRadius}m.',
+        reason: 'Too far away (${distance.toStringAsFixed(0)}m). Get within ${discoveryRadius.toInt()}m.',
       );
     }
 
@@ -154,7 +172,7 @@ class DiscoveryProvider extends ChangeNotifier {
   }
 
   // Discover a krasnal
-  Future<bool> discoverKrasnal(KrasnalModel krasnal) async {
+  Future<bool> discoverKrasnal(Krasnal krasnal) async {
     if (_userPosition == null) {
       _errorMessage = 'Location not available';
       notifyListeners();
@@ -183,20 +201,20 @@ class DiscoveryProvider extends ChangeNotifier {
   }
 
   // Scan for nearby discoverable krasnale
-  Future<List<KrasnalModel>> scanForDiscoverableKrasnale() async {
+  Future<List<Krasnal>> scanForDiscoverableKrasnale() async {
     await updateUserPosition();
     return _discoverableKrasnale;
   }
 
   // Check if krasnal is discovered by current user
   bool isDiscovered(String krasnalId) {
-    return _userDiscoveries.any((discovery) => discovery.krasnalId == krasnalId);
+    return _userDiscoveries.any((discovery) => discovery['krasnal_id'] == krasnalId);
   }
 
   // Get discovery for specific krasnal
-  UserDiscovery? getDiscovery(String krasnalId) {
+  Map<String, dynamic>? getDiscovery(String krasnalId) {
     try {
-      return _userDiscoveries.firstWhere((discovery) => discovery.krasnalId == krasnalId);
+      return _userDiscoveries.firstWhere((discovery) => discovery['krasnal_id'] == krasnalId);
     } catch (e) {
       return null;
     }
