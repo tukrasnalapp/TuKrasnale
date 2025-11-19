@@ -1693,7 +1693,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
       print('📝 AdminService.createKrasnal returned: $krasnalId (type: ${krasnalId.runtimeType})');
 
       // Check if we got a krasnal ID back (string)
-      if (krasnalId is String && krasnalId.isNotEmpty) {
+      if (krasnalId.isNotEmpty) {
         print('✅ SUCCESS: Krasnal created with ID: $krasnalId');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
