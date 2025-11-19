@@ -26,10 +26,12 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   // Form controllers
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _historyController = TextEditingController();           // NEW: History field
   final _locationController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
   final _pointsController = TextEditingController();
+  final _discoveryRadiusController = TextEditingController();   // NEW: Discovery radius field
   
   // Form state
   KrasnalRarity _selectedRarity = KrasnalRarity.common;
@@ -164,6 +166,17 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
             decoration: const InputDecoration(
               labelText: 'Description',
               hintText: 'Brief description of the krasnal',
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // History Field
+          TextFormField(
+            controller: _historyController,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              labelText: 'History',
+              hintText: 'Historical background and significance (optional)',
             ),
           ),
         ],
@@ -411,6 +424,31 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
               final points = int.tryParse(value);
               if (points == null || points < 1) {
                 return 'Please enter a valid points value (minimum 1)';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          
+          // Discovery Radius Field
+          TextFormField(
+            controller: _discoveryRadiusController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Discovery Radius (meters) *',
+              hintText: '25',
+              helperText: 'Distance in meters for GPS discovery',
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Discovery radius is required';
+              }
+              final radius = int.tryParse(value);
+              if (radius == null || radius < 5 || radius > 100) {
+                return 'Please enter a valid radius (5-100 meters)';
               }
               return null;
             },
@@ -1123,6 +1161,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
     final hasLatitude = _latitudeController.text.isNotEmpty;
     final hasLongitude = _longitudeController.text.isNotEmpty;
     final hasPoints = _pointsController.text.isNotEmpty;
+    final hasDiscoveryRadius = _discoveryRadiusController.text.isNotEmpty;
     final hasMainImage = _mainImageUrl != null;
     
     final completedFields = [
@@ -1130,10 +1169,11 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
       hasLatitude,
       hasLongitude,
       hasPoints,
+      hasDiscoveryRadius,
       hasMainImage,
     ].where((field) => field).length;
     
-    final totalFields = 5;
+    final totalFields = 6;
     
     return Card(
       child: Column(
@@ -1179,6 +1219,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
           _buildFieldStatus('Latitude', hasLatitude),
           _buildFieldStatus('Longitude', hasLongitude),
           _buildFieldStatus('Points Value', hasPoints),
+          _buildFieldStatus('Discovery Radius', hasDiscoveryRadius),
           _buildFieldStatus('Main Image', hasMainImage),
           
           if (_undiscoveredMedallionUrl != null)
@@ -1678,6 +1719,7 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
         });
       }
 
+      // Create krasnal using existing AdminService method parameters
       final krasnalId = await _adminService.createKrasnal(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -1740,10 +1782,12 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
     print('🧹 Clearing form...');
     _nameController.clear();
     _descriptionController.clear();
+    _historyController.clear();
     _locationController.clear();
     _latitudeController.clear();
     _longitudeController.clear();
     _pointsController.clear();
+    _discoveryRadiusController.clear();
     
     setState(() {
       _selectedRarity = KrasnalRarity.common;
@@ -1765,10 +1809,12 @@ class _EnhancedAddKrasnalTabState extends State<EnhancedAddKrasnalTab> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _historyController.dispose();
     _locationController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
     _pointsController.dispose();
+    _discoveryRadiusController.dispose();
     super.dispose();
   }
 

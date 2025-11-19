@@ -179,6 +179,57 @@ class _KrasnalDetailScreenState extends State<KrasnalDetailScreen> {
     }
   }
 
+  void _showFullScreenImage(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          child: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.white, size: 48),
+                            SizedBox(height: 16),
+                            Text('Failed to load image', style: TextStyle(color: Colors.white)),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 40,
+                right: 20,
+                child: IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -249,8 +300,8 @@ class _KrasnalDetailScreenState extends State<KrasnalDetailScreen> {
                       Row(
                         children: [
                           Icon(
-                            Icons.info_outline,
-                            color: Colors.blue,
+                            Icons.check_circle_outline,
+                            color: Colors.green,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -262,10 +313,13 @@ class _KrasnalDetailScreenState extends State<KrasnalDetailScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'The database supports medallion and gallery images. The Add form can upload multiple images, but the KrasnalModel needs to be updated to display them here.',
+                        'This krasnal supports multiple image types:\n'
+                        '• Main Image: Primary display image\n'
+                        '• Medallion Images: Undiscovered and discovered states\n'
+                        '• Gallery Images: Additional photos\n\n'
+                        'Images are categorized based on their URL patterns and displayed in the appropriate sections above.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
                         ),
                       ),
                     ],
@@ -482,59 +536,88 @@ class _KrasnalDetailScreenState extends State<KrasnalDetailScreen> {
   }
 
   Widget _buildMedallionSection() {
+    // Filter medallion images from the images array based on URL patterns
+    // Since KrasnalImage doesn't have metadata, we'll look for specific patterns
+    final undiscoveredMedallion = widget.krasnal.images
+        .where((img) => img.url.contains('medallion_undiscovered') || 
+                       img.url.contains('medallions') && img.url.contains('undiscovered'))
+        .firstOrNull;
+    
+    final discoveredMedallion = widget.krasnal.images
+        .where((img) => img.url.contains('medallion_discovered') || 
+                       img.url.contains('medallions') && img.url.contains('discovered'))
+        .firstOrNull;
+    
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Text(
-            'Medallion Images',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 16),
-          
-          // For now, show placeholder since medallion URLs aren't in the consolidated model
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
+            Text(
+              'Medallion Images',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.emoji_events_outlined,
-                  color: Colors.grey[400],
-                  size: 32,
+            const SizedBox(height: 16),
+            
+            if (undiscoveredMedallion != null || discoveredMedallion != null) ...[
+              Row(
+                children: [
+                  if (undiscoveredMedallion != null) ...[
+                    Expanded(
+                      child: _buildMedallionImage('Undiscovered', undiscoveredMedallion.url),
+                    ),
+                    if (discoveredMedallion != null) const SizedBox(width: 16),
+                  ],
+                  if (discoveredMedallion != null) ...[
+                    Expanded(
+                      child: _buildMedallionImage('Discovered', discoveredMedallion.url),
+                    ),
+                  ],
+                ],
+              ),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Medallion Images',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.bold,
-                        ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.emoji_events_outlined,
+                      color: Colors.grey[400],
+                      size: 32,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'No Medallion Images',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Medallion images can be added when editing this krasnal.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Medallion images are stored in the database but not yet displayed in the consolidated model. Check the enhanced extension for access.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -586,6 +669,24 @@ class _KrasnalDetailScreenState extends State<KrasnalDetailScreen> {
   }
 
   Widget _buildGallerySection() {
+    // Filter gallery images: exclude primary image and medallion images
+    final galleryImages = widget.krasnal.images.where((img) {
+      // Skip primary image (usually the first one)
+      if (widget.krasnal.primaryImageUrl != null && img.url == widget.krasnal.primaryImageUrl) {
+        return false;
+      }
+      
+      // Skip medallion images
+      if (img.url.contains('medallion_undiscovered') || 
+          img.url.contains('medallion_discovered') ||
+          (img.url.contains('medallions') && (img.url.contains('undiscovered') || img.url.contains('discovered')))) {
+        return false;
+      }
+      
+      // Include gallery images (either explicitly named or remaining images)
+      return true;
+    }).toList();
+    
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -599,12 +700,19 @@ class _KrasnalDetailScreenState extends State<KrasnalDetailScreen> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const Spacer(),
+              if (galleryImages.isNotEmpty)
+                Text(
+                  '${galleryImages.length} image${galleryImages.length > 1 ? 's' : ''}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),
           
-          // Check if additional images exist beyond the primary one
-          if (widget.krasnal.images.length > 1) ...[
+          // Display gallery images if they exist
+          if (galleryImages.isNotEmpty) ...[
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -614,10 +722,9 @@ class _KrasnalDetailScreenState extends State<KrasnalDetailScreen> {
                 mainAxisSpacing: 8,
                 childAspectRatio: 1,
               ),
-              itemCount: widget.krasnal.images.length - 1, // Exclude primary image
+              itemCount: galleryImages.length,
               itemBuilder: (context, index) {
-                final imageIndex = index + 1; // Skip the primary image (index 0)
-                final krasnalImage = widget.krasnal.images[imageIndex];
+                final krasnalImage = galleryImages[index];
                 return Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
@@ -626,27 +733,30 @@ class _KrasnalDetailScreenState extends State<KrasnalDetailScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(7),
                     child: krasnalImage.url.startsWith('http')
-                        ? Image.network(
-                            krasnalImage.url,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(
-                                child: SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[300],
-                                child: const Center(
-                                  child: Icon(Icons.broken_image, size: 24),
-                                ),
-                              );
-                            },
+                        ? GestureDetector(
+                            onTap: () => _showFullScreenImage(krasnalImage.url),
+                            child: Image.network(
+                              krasnalImage.url,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Center(
+                                    child: Icon(Icons.broken_image, size: 24),
+                                  ),
+                                );
+                              },
+                            ),
                           )
                         : Container(
                             color: Colors.grey[300],
