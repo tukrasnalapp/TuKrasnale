@@ -9,31 +9,46 @@ class SupabaseService {
   
   SupabaseService._();
   
-  late SupabaseClient _client;
+  SupabaseClient? _client;
   
-  SupabaseClient get client => _client;
+  SupabaseClient get client {
+    if (_client == null) {
+      try {
+        _client = Supabase.instance.client;
+      } catch (e) {
+        throw Exception('Supabase not initialized. Please ensure Supabase.initialize() is called before accessing the client.');
+      }
+    }
+    return _client!;
+  }
   
   Future<void> initialize() async {
     await dotenv.load();
     
-    await Supabase.initialize(
-      url: dotenv.env['SUPABASE_URL']!,
-      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-    );
-    
-    _client = Supabase.instance.client;
+    try {
+      await Supabase.initialize(
+        url: dotenv.env['SUPABASE_URL']!,
+        anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+      );
+      
+      _client = Supabase.instance.client;
+      print('✅ SupabaseService initialized successfully');
+    } catch (e) {
+      print('❌ SupabaseService initialization failed: $e');
+      throw e;
+    }
   }
   
   // Auth methods
-  User? get currentUser => _client.auth.currentUser;
+  User? get currentUser => client.auth.currentUser;
   
-  Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges => client.auth.onAuthStateChange;
   
   Future<AuthResponse> signUp({
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signUp(
+    return await client.auth.signUp(
       email: email,
       password: password,
     );
@@ -43,107 +58,81 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signInWithPassword(
+    return await client.auth.signInWithPassword(
       email: email,
       password: password,
     );
   }
   
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    await client.auth.signOut();
   }
   
   // Database methods
   Future<PostgrestList> getData(String table) async {
-    return await _client.from(table).select();
+    return await client.from(table).select();
   }
   
   Future<PostgrestList> insertData(String table, Map<String, dynamic> data) async {
-    return await _client.from(table).insert(data).select();
+    return await client.from(table).insert(data).select();
   }
   
   Future<PostgrestList> updateData(String table, Map<String, dynamic> data, String column, dynamic value) async {
-    return await _client.from(table).update(data).eq(column, value).select();
+    return await client.from(table).update(data).eq(column, value).select();
   }
   
   Future<void> deleteData(String table, String column, dynamic value) async {
-    await _client.from(table).delete().eq(column, value);
+    await client.from(table).delete().eq(column, value);
   }
   
   // Krasnal methods
   Future<List<Krasnal>> getAllKrasnale() async {
     try {
-      final response = await _client
+      final response = await client
           .from('krasnale')
           .select('*')
           .eq('is_active', true) // Only get active krasnale
           .order('created_at', ascending: false);
         
-      return response.map<Krasnal>((json) {
-        // Handle coordinates (they're stored directly in krasnale table)
-        double latitude = (json['latitude'] as num?)?.toDouble() ?? 0.0;
-        double longitude = (json['longitude'] as num?)?.toDouble() ?? 0.0;
-        String? address = json['location_name'] as String?;
-        
-        final location = KrasnalLocation(
-          latitude: latitude,
-          longitude: longitude,
-          address: address,
-        );
-        
-        // Handle gallery images array
-        List<KrasnalImage> images = [];
-        if (json['gallery_images'] != null) {
-          final galleryUrls = List<String>.from(json['gallery_images'] as List);
-          images = galleryUrls.asMap().entries.map((entry) {
-            return KrasnalImage(
-              id: '${json['id']}_gallery_${entry.key}',
-              url: entry.value,
-              uploadedAt: json['created_at'] != null 
-                  ? DateTime.parse(json['created_at'] as String)
-                  : DateTime.now(),
-            );
-          }).toList();
-        }
-        
-        // Add primary image if it exists
-        if (json['image_url'] != null && (json['image_url'] as String).isNotEmpty) {
-          images.insert(0, KrasnalImage(
-            id: '${json['id']}_primary',
-            url: json['image_url'] as String,
-            uploadedAt: json['created_at'] != null 
-                ? DateTime.parse(json['created_at'] as String)
-                : DateTime.now(),
-          ));
-        }
-        
-        // Handle metadata
-        Map<String, dynamic> metadata = {};
-        if (json['rarity'] != null) {
-          metadata['rarity'] = json['rarity'];
-        }
-        if (json['points_value'] != null) {
-          metadata['pointsValue'] = json['points_value'];
-        }
-        if (json['discovery_radius'] != null) {
-          metadata['discoveryRadius'] = json['discovery_radius'];
-        }
-
-        return Krasnal(
-          id: json['id'] as String,
-          name: json['name'] as String,
-          description: json['description'] as String? ?? '',
-          location: location,
-          metadata: metadata,
-          createdAt: json['created_at'] != null 
-              ? DateTime.parse(json['created_at'] as String)
-              : DateTime.now(),
-          images: images,
-        );
-      }).toList();
+      final krasnaleData = response as List<dynamic>;
+      return krasnaleData.map((json) => Krasnal.fromJson(json)).toList();
     } catch (e) {
       print('❌ Error fetching krasnale: $e');
       // Return empty list instead of throwing to prevent app crash
+      return <Krasnal>[];
+    }
+  }
+
+  Future<Krasnal?> getKrasnalById(String id) async {
+    try {
+      final response = await client
+          .from('krasnale')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+      if (response != null) {
+        return Krasnal.fromJson(response);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error fetching krasnal by ID: $e');
+      return null;
+    }
+  }
+
+  Future<List<Krasnal>> searchKrasnale(String query) async {
+    try {
+      final response = await client
+          .from('krasnale')
+          .select('*')
+          .ilike('name', '%$query%')
+          .eq('is_active', true);
+
+      final krasnaleData = response as List<dynamic>;
+      return krasnaleData.map((json) => Krasnal.fromJson(json)).toList();
+    } catch (e) {
+      print('❌ Error searching krasnale: $e');
       return <Krasnal>[];
     }
   }
@@ -154,7 +143,7 @@ class SupabaseService {
     double radiusKm = 5.0,
   }) async {
     try {
-      // Simple distance calculation for now
+      // Get all active krasnale first
       final allKrasnale = await getAllKrasnale();
       return allKrasnale.where((krasnal) {
         double distance = _calculateDistance(
@@ -183,7 +172,9 @@ class SupabaseService {
           userLat, userLng,
           krasnal.location.latitude, krasnal.location.longitude,
         );
-        if (distance <= discoveryRadiusMeters) {
+        // Use the krasnal's specific discovery radius if available
+        double krasnalRadius = krasnal.discoveryRadius.toDouble();
+        if (distance <= krasnalRadius) {
           discoverable.add(krasnal);
         }
       }
@@ -195,7 +186,7 @@ class SupabaseService {
     }
   }
 
-  // Helper method for distance calculation
+  // Helper method for distance calculation (improved version)
   double _calculateDistance(double lat1, double lng1, double lat2, double lng2) {
     const double earthRadius = 6371000; // Earth radius in meters
     double dLat = _degreesToRadians(lat2 - lat1);
@@ -215,7 +206,7 @@ class SupabaseService {
 
   // User discovery methods
   Future<List<Map<String, dynamic>>> getUserDiscoveries(String userId) async {
-    final response = await _client
+    final response = await client
         .from('user_discoveries')
         .select('*, krasnale(*)')
         .eq('user_id', userId)
@@ -231,7 +222,7 @@ class SupabaseService {
   }) async {
     try {
       // Record the discovery
-      final response = await _client
+      final response = await client
           .from('user_discoveries')
           .insert({
             'user_id': currentUser!.id,
@@ -251,7 +242,7 @@ class SupabaseService {
   Future<bool> hasDiscovered(String krasnalId) async {
     if (currentUser == null) return false;
     
-    final response = await _client
+    final response = await client
         .from('user_discoveries')
         .select('id')
         .eq('user_id', currentUser!.id)
@@ -263,7 +254,7 @@ class SupabaseService {
 
   // User profile methods
   Future<Map<String, dynamic>?> getUserProfile(String userId) async {
-    final response = await _client
+    final response = await client
         .from('user_profiles')
         .select()
         .eq('user_id', userId)
@@ -274,7 +265,7 @@ class SupabaseService {
 
   // Leaderboard methods
   Future<List<Map<String, dynamic>>> getLeaderboard({int limit = 50}) async {
-    final response = await _client
+    final response = await client
         .from('user_profiles')
         .select('username, full_name, total_points, discoveries_count')
         .order('total_points', ascending: false)

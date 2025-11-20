@@ -28,8 +28,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isSignUp ? 'Sign Up' : 'Sign In'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(
+          _isSignUp ? 'Sign Up' : 'Sign In',
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.red[700],
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -45,8 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 // App Logo
                 const Center(
                   child: AppLogo(
-                    width: 100,
-                    height: 100,
+                    width: 150,
+                    height: 150,
                     showText: true,
                   ),
                 ),
@@ -63,11 +67,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 30),
-                  const Icon(
-                    Icons.account_circle,
-                    size: 80,
-                  ),
-                  const SizedBox(height: 32),
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(
@@ -76,6 +75,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icon(Icons.email),
                     ),
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) {
+                      // Move focus to password field when enter is pressed
+                      FocusScope.of(context).nextFocus();
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your email';
@@ -95,6 +99,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icon(Icons.lock),
                     ),
                     obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) {
+                      // Submit form when enter is pressed on password field
+                      if (!context.read<AuthProvider>().isLoading) {
+                        _handleSubmit();
+                      }
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';

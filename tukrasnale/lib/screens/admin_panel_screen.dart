@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-//import '../models/krasnal_models.dart';
+import '../models/krasnal_models.dart';
 import '../models/report_models.dart';
 import '../services/admin_service.dart';
 import '../screens/enhanced_add_krasnal_tab.dart';
@@ -94,13 +94,29 @@ class _ReportsTabState extends State<_ReportsTab> {
     });
 
     try {
-      final reports = await _adminService.getAllReports();
+      final reports = await _adminService.getUserReports();
       if (mounted) {
         setState(() {
-          _reports = reports;
+          _reports = reports.map((reportData) {
+            return KrasnaleReport(
+              id: reportData['id'] ?? '',
+              userId: reportData['user_id'] ?? '',
+              title: reportData['title'] ?? 'Untitled Report',
+              description: reportData['description'] ?? '',
+              reportType: ReportType.other, // Default type
+              status: ReportStatus.pending, // Default status
+              createdAt: DateTime.tryParse(reportData['created_at'] ?? '') ?? DateTime.now(),
+              updatedAt: DateTime.tryParse(reportData['updated_at'] ?? '') ?? DateTime.now(),
+              adminNotes: reportData['admin_notes'],
+              krasnalId: reportData['krasnal_id'],
+              locationLat: reportData['location_lat']?.toDouble(),
+              locationLng: reportData['location_lng']?.toDouble(),
+            );
+          }).toList();
         });
       }
     } catch (e) {
+      print('❌ Error loading reports: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -108,6 +124,9 @@ class _ReportsTabState extends State<_ReportsTab> {
             backgroundColor: Colors.red,
           ),
         );
+        setState(() {
+          _reports = []; // Set empty list on error
+        });
       }
     } finally {
       if (mounted) {
@@ -545,13 +564,15 @@ class _ReportsTabState extends State<_ReportsTab> {
 
   void _updateReportStatus(KrasnaleReport report, ReportStatus status) async {
     try {
-      await _adminService.updateReportStatus(report.id, status);
-      await _loadReports(); // Refresh
+      // TODO: Implement updateReportStatus in AdminService
+      print('⚠️ Report status update not implemented: ${report.id} -> ${_getStatusText(status)}');
+      
+      // For now, just show a message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Report status updated to ${_getStatusText(status)}'),
-            backgroundColor: Colors.green,
+            content: Text('Report status update not yet implemented'),
+            backgroundColor: Colors.orange,
           ),
         );
       }
@@ -606,17 +627,15 @@ class _ReportsTabState extends State<_ReportsTab> {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                await _adminService.updateReportStatus(
-                  report.id,
-                  newStatus,
-                  adminNotes: notesController.text,
-                );
-                await _loadReports(); // Refresh
+                // TODO: Implement updateReportStatus in AdminService
+                print('⚠️ Report update not implemented: ${report.id} -> ${_getStatusText(newStatus)}');
+                print('   Admin notes: ${notesController.text}');
+                
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Report ${_getStatusText(newStatus).toLowerCase()}'),
-                      backgroundColor: Colors.green,
+                      content: Text('Report update functionality not yet implemented'),
+                      backgroundColor: Colors.orange,
                     ),
                   );
                 }

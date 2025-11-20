@@ -41,7 +41,7 @@ dependencies:
   
   # HTTP client
   #http: ^1.2.1
-  http: ^1.6.5
+  http: ^1.6.0
   
   # Environment variables
   #flutter_dotenv: ^5.1.0

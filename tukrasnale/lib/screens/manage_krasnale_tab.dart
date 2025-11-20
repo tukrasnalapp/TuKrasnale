@@ -32,7 +32,7 @@ class _ManageKrasnaleTabState extends State<ManageKrasnaleTab> {
     });
 
     try {
-      final krasnale = await _adminService.getAllKrasnale();
+      final krasnale = await _adminService.getAllKrasnaleForAdmin();
       if (mounted) {
         setState(() {
           _krasnale = krasnale;

@@ -126,34 +126,194 @@ class Krasnal {
   final String id;
   final String name;
   final String description;
+  final String? history;                    // NEW: from database schema
   final KrasnalLocation location;
-  final List<KrasnalImage> images;
+  final String? primaryImageUrl;            // Maps to image_url in DB
+  final String? model3dUrl;                 // NEW: from database schema
+  final KrasnalRarity rarity;              // From database schema
+  final int discoveryRadius;               // NEW: from database schema
+  final int pointsValue;                   // From database schema (points_value)
+  final bool isActive;                     // NEW: from database schema
+  final DateTime createdAt;
+  final String? undiscoveredMedallionUrl;  // NEW: direct field from DB
+  final String? discoveredMedallionUrl;    // NEW: direct field from DB
+  final List<String> galleryImages;       // NEW: JSON array from DB
+  final List<KrasnalImage> images;         // For compatibility with existing code
+  final Map<String, dynamic>? metadata;    // Keep for compatibility
+
+  // Legacy fields for backward compatibility
   final KrasnalCategory category;
   final KrasnalStatus status;
   final bool isVisited;
-  final DateTime createdAt;
   final DateTime? updatedAt;
   final String? author;
   final String? sculptor;
   final int? yearCreated;
-  final Map<String, dynamic>? metadata;
 
   const Krasnal({
     required this.id,
     required this.name,
     required this.description,
+    this.history,
     required this.location,
-    this.images = const [],
+    this.primaryImageUrl,
+    this.model3dUrl,
+    required this.rarity,
+    required this.discoveryRadius,
+    required this.pointsValue,
+    required this.isActive,
+    required this.createdAt,
+    this.undiscoveredMedallionUrl,
+    this.discoveredMedallionUrl,
+    required this.galleryImages,
+    required this.images,
+    this.metadata,
+    // Legacy fields with defaults
     this.category = KrasnalCategory.other,
     this.status = KrasnalStatus.active,
     this.isVisited = false,
-    required this.createdAt,
     this.updatedAt,
     this.author,
     this.sculptor,
     this.yearCreated,
-    this.metadata,
   });
+
+  // Convenience getters for backwards compatibility
+  double get latitude => location.latitude;
+  double get longitude => location.longitude;
+  List<String> get imageUrls => images.map((img) => img.url).toList();
+
+  factory Krasnal.fromJson(Map<String, dynamic> json) {
+    // Parse rarity from string
+    KrasnalRarity rarity = KrasnalRarity.common;
+    if (json['rarity'] != null) {
+      final rarityString = json['rarity'] as String;
+      rarity = KrasnalRarity.values.firstWhere(
+        (r) => r.name == rarityString,
+        orElse: () => KrasnalRarity.common,
+      );
+    }
+
+    // Parse gallery images from JSON array string
+    List<String> galleryImages = [];
+    if (json['gallery_images'] != null) {
+      if (json['gallery_images'] is String) {
+        // Parse JSON string like: ["url1","url2","url3"]
+        try {
+          final decoded = json['gallery_images'] as String;
+          if (decoded.startsWith('[') && decoded.endsWith(']')) {
+            final content = decoded.substring(1, decoded.length - 1);
+            if (content.isNotEmpty) {
+              galleryImages = content
+                  .split(',')
+                  .map((e) => e.trim().replaceAll('"', ''))
+                  .where((e) => e.isNotEmpty)
+                  .toList();
+            }
+          }
+        } catch (e) {
+          print('Error parsing gallery_images: $e');
+        }
+      } else if (json['gallery_images'] is List) {
+        galleryImages = (json['gallery_images'] as List)
+            .map((e) => e.toString())
+            .toList();
+      }
+    }
+
+    // Build images list for compatibility with existing code
+    List<KrasnalImage> images = [];
+    
+    // Add primary image
+    if (json['image_url'] != null) {
+      images.add(KrasnalImage(
+        id: '${json['id']}_primary',
+        url: json['image_url'] as String,
+        isPrimary: true,
+        uploadedAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      ));
+    }
+
+    // Add medallion images
+    if (json['undiscovered_medallion_url'] != null) {
+      images.add(KrasnalImage(
+        id: '${json['id']}_undiscovered',
+        url: json['undiscovered_medallion_url'] as String,
+        caption: 'Undiscovered Medallion',
+        uploadedAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      ));
+    }
+
+    if (json['discovered_medallion_url'] != null) {
+      images.add(KrasnalImage(
+        id: '${json['id']}_discovered',
+        url: json['discovered_medallion_url'] as String,
+        caption: 'Discovered Medallion',
+        uploadedAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      ));
+    }
+
+    // Add gallery images
+    for (int i = 0; i < galleryImages.length; i++) {
+      images.add(KrasnalImage(
+        id: '${json['id']}_gallery_$i',
+        url: galleryImages[i],
+        caption: 'Gallery Image ${i + 1}',
+        uploadedAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      ));
+    }
+
+    // Parse legacy category and status
+    KrasnalCategory category = KrasnalCategory.other;
+    if (json['category'] != null) {
+      category = KrasnalCategory.values.firstWhere(
+        (cat) => cat.name == json['category'],
+        orElse: () => KrasnalCategory.other,
+      );
+    }
+
+    KrasnalStatus status = KrasnalStatus.active;
+    if (json['status'] != null) {
+      status = KrasnalStatus.values.firstWhere(
+        (stat) => stat.name == json['status'],
+        orElse: () => KrasnalStatus.active,
+      );
+    } else if (json['is_active'] != null) {
+      status = (json['is_active'] as bool) ? KrasnalStatus.active : KrasnalStatus.inactive;
+    }
+
+    return Krasnal(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String? ?? '',
+      history: json['history'] as String?,
+      location: KrasnalLocation(
+        latitude: (json['latitude'] as num).toDouble(),
+        longitude: (json['longitude'] as num).toDouble(),
+        address: json['location_name'] as String?,
+        district: json['district'] as String?,
+      ),
+      primaryImageUrl: json['image_url'] as String?,
+      model3dUrl: json['model_3d_url'] as String?,
+      rarity: rarity,
+      discoveryRadius: (json['discovery_radius'] as num?)?.toInt() ?? 25,
+      pointsValue: (json['points_value'] as num?)?.toInt() ?? 10,
+      isActive: json['is_active'] as bool? ?? true,
+      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      undiscoveredMedallionUrl: json['undiscovered_medallion_url'] as String?,
+      discoveredMedallionUrl: json['discovered_medallion_url'] as String?,
+      galleryImages: galleryImages,
+      images: images,
+      metadata: json['metadata'] as Map<String, dynamic>?,
+      category: category,
+      status: status,
+      isVisited: json['isVisited'] as bool? ?? false,
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      author: json['author'] as String?,
+      sculptor: json['sculptor'] as String?,
+      yearCreated: json['yearCreated'] as int?,
+    );
+  }
 
   // Legacy constructor for backward compatibility
   factory Krasnal.legacy({
@@ -181,39 +341,49 @@ class Krasnal {
       }).toList(),
       isVisited: isVisited,
       createdAt: createdAt,
+      rarity: KrasnalRarity.common,
+      discoveryRadius: 25,
+      pointsValue: 10,
+      isActive: true,
+      galleryImages: images.length > 1 ? images.skip(1).toList() : [],
     );
   }
 
-  // Legacy getters for backward compatibility
-  double get latitude => location.latitude;
-  double get longitude => location.longitude;
-  List<String> get imageUrls => images.map((img) => img.url).toList();
-  String? get primaryImageUrl {
-    if (images.isEmpty) return null;
-    final primary = images.where((img) => img.isPrimary);
-    return primary.isNotEmpty ? primary.first.url : images.first.url;
-  }
-
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
       'description': description,
-      'location': location.toMap(),
-      'images': images.map((img) => img.toMap()).toList(),
+      'history': history,
+      'location_name': location.address,
+      'latitude': location.latitude,
+      'longitude': location.longitude,
+      'image_url': primaryImageUrl,
+      'model_3d_url': model3dUrl,
+      'rarity': rarity.name,
+      'discovery_radius': discoveryRadius,
+      'points_value': pointsValue,
+      'is_active': isActive,
+      'created_at': createdAt.toIso8601String(),
+      'undiscovered_medallion_url': undiscoveredMedallionUrl,
+      'discovered_medallion_url': discoveredMedallionUrl,
+      'gallery_images': galleryImages.isNotEmpty 
+          ? '["${galleryImages.join('","')}"]' 
+          : null,
+      'metadata': metadata,
+      // Legacy fields
       'category': category.name,
       'status': status.name,
       'isVisited': isVisited,
-      'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'author': author,
       'sculptor': sculptor,
       'yearCreated': yearCreated,
-      'metadata': metadata,
     };
   }
 
   // Legacy toMap for backward compatibility
+  Map<String, dynamic> toMap() => toJson();
   Map<String, dynamic> toLegacyMap() {
     return {
       'id': id,
@@ -227,81 +397,59 @@ class Krasnal {
     };
   }
 
-  factory Krasnal.fromMap(Map<String, dynamic> map) {
-    return Krasnal(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      description: map['description'] ?? '',
-      location: map['location'] != null 
-        ? KrasnalLocation.fromMap(map['location'])
-        : KrasnalLocation(
-            latitude: map['latitude']?.toDouble() ?? 0.0,
-            longitude: map['longitude']?.toDouble() ?? 0.0,
-          ),
-      images: map['images'] != null
-        ? (map['images'] as List).map((img) {
-            if (img is String) {
-              // Legacy support for string URLs
-              return KrasnalImage(
-                id: '${map['id']}_img_${map['images'].indexOf(img)}',
-                url: img,
-                uploadedAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
-                isPrimary: map['images'].indexOf(img) == 0,
-              );
-            } else {
-              return KrasnalImage.fromMap(img);
-            }
-          }).toList()
-        : [],
-      category: KrasnalCategory.values.firstWhere(
-        (cat) => cat.name == map['category'],
-        orElse: () => KrasnalCategory.other,
-      ),
-      status: KrasnalStatus.values.firstWhere(
-        (stat) => stat.name == map['status'],
-        orElse: () => KrasnalStatus.active,
-      ),
-      isVisited: map['isVisited'] ?? false,
-      createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
-      author: map['author'],
-      sculptor: map['sculptor'],
-      yearCreated: map['yearCreated'],
-      metadata: map['metadata'],
-    );
-  }
+  factory Krasnal.fromMap(Map<String, dynamic> map) => Krasnal.fromJson(map);
 
   Krasnal copyWith({
     String? id,
     String? name,
     String? description,
+    String? history,
     KrasnalLocation? location,
+    String? primaryImageUrl,
+    String? model3dUrl,
+    KrasnalRarity? rarity,
+    int? discoveryRadius,
+    int? pointsValue,
+    bool? isActive,
+    DateTime? createdAt,
+    String? undiscoveredMedallionUrl,
+    String? discoveredMedallionUrl,
+    List<String>? galleryImages,
     List<KrasnalImage>? images,
+    Map<String, dynamic>? metadata,
     KrasnalCategory? category,
     KrasnalStatus? status,
     bool? isVisited,
-    DateTime? createdAt,
     DateTime? updatedAt,
     String? author,
     String? sculptor,
     int? yearCreated,
-    Map<String, dynamic>? metadata,
   }) {
     return Krasnal(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
+      history: history ?? this.history,
       location: location ?? this.location,
+      primaryImageUrl: primaryImageUrl ?? this.primaryImageUrl,
+      model3dUrl: model3dUrl ?? this.model3dUrl,
+      rarity: rarity ?? this.rarity,
+      discoveryRadius: discoveryRadius ?? this.discoveryRadius,
+      pointsValue: pointsValue ?? this.pointsValue,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      undiscoveredMedallionUrl: undiscoveredMedallionUrl ?? this.undiscoveredMedallionUrl,
+      discoveredMedallionUrl: discoveredMedallionUrl ?? this.discoveredMedallionUrl,
+      galleryImages: galleryImages ?? this.galleryImages,
       images: images ?? this.images,
+      metadata: metadata ?? this.metadata,
       category: category ?? this.category,
       status: status ?? this.status,
       isVisited: isVisited ?? this.isVisited,
-      createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       author: author ?? this.author,
       sculptor: sculptor ?? this.sculptor,
       yearCreated: yearCreated ?? this.yearCreated,
-      metadata: metadata ?? this.metadata,
     );
   }
 
@@ -324,7 +472,10 @@ class Krasnal {
 extension KrasnalExtensions on Krasnal {
   bool get hasImages => images.isNotEmpty;
   bool get hasLocation => location.latitude != 0.0 && location.longitude != 0.0;
-  bool get isActive => status == KrasnalStatus.active;
+  bool get isActiveStatus => isActive && status == KrasnalStatus.active;
+  bool get hasMedallionImages => undiscoveredMedallionUrl != null || discoveredMedallionUrl != null;
+  bool get hasGalleryImages => galleryImages.isNotEmpty;
+  bool get hasHistory => history != null && history!.isNotEmpty;
   
   String get categoryDisplayName {
     switch (category) {
@@ -354,6 +505,29 @@ extension KrasnalExtensions on Krasnal {
       case KrasnalStatus.removed:
         return 'Removed';
     }
+  }
+
+  String get rarityDisplayName {
+    switch (rarity) {
+      case KrasnalRarity.common:
+        return 'Common';
+      case KrasnalRarity.rare:
+        return 'Rare';
+      case KrasnalRarity.epic:
+        return 'Epic';
+      case KrasnalRarity.legendary:
+        return 'Legendary';
+    }
+  }
+
+  // Get all image URLs in a flat list
+  List<String> get allImageUrls {
+    final List<String> allUrls = [];
+    if (primaryImageUrl != null) allUrls.add(primaryImageUrl!);
+    if (undiscoveredMedallionUrl != null) allUrls.add(undiscoveredMedallionUrl!);
+    if (discoveredMedallionUrl != null) allUrls.add(discoveredMedallionUrl!);
+    allUrls.addAll(galleryImages);
+    return allUrls;
   }
 }
 
